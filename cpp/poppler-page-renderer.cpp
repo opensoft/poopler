@@ -30,6 +30,262 @@
 #include "splash/SplashBitmap.h"
 #endif
 
+#include <memory>
+#include <map>
+#include <list>
+#include <array>
+class SplashOutputDevice : public SplashOutputDev
+{
+    bool transparent = true;
+    struct Color
+    {
+        enum Format
+        {
+            DeviceGray = csDeviceGray,
+            DeviceRGB = csDeviceRGB,
+            DeviceCMYK = csDeviceCMYK,
+
+            CalGray = csCalGray,
+            CalRGB = csCalRGB,
+            Lab = csLab,
+            ICCBased = csICCBased,
+
+            Indexed = csIndexed,
+            Separation = csSeparation,
+            DeviceN = csDeviceN,
+            Pattern = csPattern
+        } format;
+
+        std::vector<float> colors;
+    };
+
+    struct ImageData
+    {
+        ImageData(Stream *str, int _width, int _height, GfxImageColorMap *colorMap, GBool inlineImg = gFalse)
+            : width(_width), height(_height)
+        {
+            bitsPerChannel = colorMap->getBits();
+            channels = colorMap->getNumPixelComps();
+            rowSize = (bitsPerChannel * channels * width + 7) / 8;
+            format = static_cast<Color::Format>(colorMap->getColorSpace()->getMode());
+
+            download(str, inlineImg);
+        }
+
+        ImageData(Stream *str, int _width, int _height, GBool inlineImg = gFalse)
+            : width(_width), height(_height)
+        {
+            bitsPerChannel = 1;
+            channels = 1;
+            rowSize = (bitsPerChannel * channels * width + 7) / 8;
+            format = Color::DeviceGray;
+
+            download(str, inlineImg);
+        }
+        void download(Stream *str, GBool inlineImg)
+        {
+            data.resize(rowSize * height);
+            str->reset();
+            int readChars = str->doGetChars(data.size(), data.data());
+            str->close();
+        }
+        Color::Format format;
+        int bitsPerChannel;
+        int channels;
+        int width;
+        int height;
+        int rowSize;
+        //Each n-bit unit within the bit stream is interpreted as an unsigned integer
+        //in the range 0 to 2n−1, with the high-order bit first
+        // So, PDF use big-endian bit order. It is awfull, because
+        // in mask case 128 - set first pixel to 1 and 1 - set eighth pixel (less bit set high pixel)
+        // I hope that after decoding byte-order is set to right order.
+        std::vector<unsigned char> data;
+    };
+    using TransformationMatrix = std::array<double, 6>;
+    struct ImageDraw
+    {
+        std::shared_ptr<ImageData> image;
+        std::shared_ptr<ImageData> mask;
+        //1. if mask empty and maskColors is not - then it contain min and max pairs for each
+        // color component of pixel which must be excluded form draw (chromokey?) 
+        //2. if mask isn't empty maskColors used for set inversion of mask: if maskColors[0] > maskColors[1]
+        std::vector<int> maskColors;
+        // When image is empty this color used for drawing mask.
+        // We can't use image in this case because 1 (0 if inverse) in pixel is transparent - not drawing
+        Color fillColor;
+        void setFillColor(int colorFormat, int channels, int *colors)
+        {
+            fillColor.format = static_cast<Color::Format>(colorFormat);
+            for (int i = 0; i < channels; i++)
+                fillColor.colors.push_back(colors[i]);
+        }
+
+        TransformationMatrix transform;
+        void setTransformationMatrix(const double * ctm)
+        {
+            std::copy(ctm, ctm + 6, transform.begin());
+        }
+
+        void setMaskInversion(bool invert)
+        {
+            if (invert)
+                maskColors = {1, 0};
+            else
+                maskColors = {0, 1};
+        }
+
+
+    };
+
+    using SharedImageData = std::shared_ptr<ImageData>;
+    using PdfReference = std::pair<int, int>;
+    using ImageStore = std::map<PdfReference, SharedImageData>;
+    ImageStore m_images;
+    ImageStore m_imageMasks;
+    std::list<SharedImageData> m_inlineImages;
+
+    std::list<ImageDraw> drawLaiers;
+
+    template<typename ... Args>
+    SharedImageData sharedImage(ImageStore &imageStore, Object *ref, Args && ...args)
+    {
+        PdfReference reference;
+        if (ref) {
+            reference = PdfReference(ref->getRef().num, ref->getRef().gen);
+            auto imageIterator = imageStore.find(reference);
+            if (imageIterator != imageStore.end() && imageIterator->second)
+                return imageIterator->second;
+        }
+        auto sharedImageData = std::make_shared<ImageData>(args...);
+        if (ref)
+            imageStore[reference] = sharedImageData;
+        else
+            m_inlineImages.push_back(sharedImageData);
+
+        return sharedImageData;
+    }
+    template<typename ... Args>
+    SharedImageData sharedImage(Args && ...args)
+    {
+        return sharedImage(m_images, args...);
+    }
+
+    template<typename ... Args>
+    SharedImageData sharedMask(Args && ...args)
+    {
+        return sharedImage(m_imageMasks, args...);
+    }
+public:
+    SplashOutputDevice(SplashColorMode colorModeA, int bitmapRowPadA,
+                       GBool reverseVideoA, SplashColorPtr paperColorA,
+                       GBool bitmapTopDownA = gTrue,
+                       SplashThinLineMode thinLineMode = splashThinLineDefault,
+                       GBool overprintPreviewA = globalParams->getOverprintPreview())
+        :SplashOutputDev(colorModeA, bitmapRowPadA, reverseVideoA, paperColorA,
+                         bitmapTopDownA, thinLineMode, overprintPreviewA)
+    {
+    }
+
+    void drawChar(GfxState *state, double x, double y,
+                  double dx, double dy,
+                  double originX, double originY,
+                  CharCode code, int nBytes,
+                  Unicode *u, int uLen) override
+    {
+        if (transparent)
+            SplashOutputDev::drawChar(state, x, y, dx, dy, originX, originY, code, nBytes, u, uLen);
+    }
+    //----- image drawing
+    void drawImageMask(GfxState *state, Object *ref, Stream *str,
+                       int width, int height, GBool invert,
+                       GBool interpolate, GBool inlineImg) override
+    {
+        ImageDraw imageDraw;
+        imageDraw.mask = sharedMask(ref, str, width, height, inlineImg);
+        imageDraw.setFillColor(state->getFillColorSpace()->getMode(), state->getFillColorSpace()->getNComps(), state->getFillColor()->c);
+        imageDraw.setMaskInversion(invert);
+        imageDraw.setTransformationMatrix(state->getCTM());
+        drawLaiers.push_back(imageDraw);
+
+        if (transparent && !inlineImg)
+            SplashOutputDev::drawImageMask(state, ref, str, width, height, invert, interpolate, inlineImg);
+    }
+
+    void drawImage(GfxState *state, Object *ref, Stream *str,
+                   int width, int height, GfxImageColorMap *colorMap,
+                   GBool interpolate, int *maskColors, GBool inlineImg) override
+    {
+        ImageDraw imageDraw;
+        imageDraw.image = sharedImage(ref, str, width, height, colorMap, inlineImg);
+        if (maskColors)
+            imageDraw.maskColors.assign(maskColors, maskColors + 2 * imageDraw.image->channels);
+
+        imageDraw.setTransformationMatrix(state->getCTM());
+        drawLaiers.push_back(imageDraw);
+
+        if (transparent && !inlineImg)
+            SplashOutputDev::drawImage(state, ref, str, width, height, colorMap, interpolate, maskColors, inlineImg);
+    }
+
+    void drawMaskedImage(GfxState *state, Object *ref, Stream *str,
+                         int width, int height,
+                         GfxImageColorMap *colorMap,
+                         GBool interpolate,
+                         Stream *maskStr, int maskWidth, int maskHeight,
+                         GBool maskInvert, GBool maskInterpolate) override
+    {
+        ImageDraw imageDraw;
+        imageDraw.image = sharedImage(ref, str, width, height, colorMap);
+        imageDraw.mask = sharedMask(ref, maskStr, maskWidth, maskHeight);
+        imageDraw.setMaskInversion(maskInvert);
+        imageDraw.setTransformationMatrix(state->getCTM());
+        drawLaiers.push_back(imageDraw);
+
+        if (transparent)
+            SplashOutputDev::drawMaskedImage(state, ref, str, width, height, colorMap, interpolate, maskStr, maskWidth, maskHeight, maskInvert, maskInterpolate);
+    }
+
+    void drawSoftMaskedImage(GfxState *state, Object *ref, Stream *str,
+                             int width, int height,
+                             GfxImageColorMap *colorMap,
+                             GBool interpolate,
+                             Stream *maskStr,
+                             int maskWidth, int maskHeight,
+                             GfxImageColorMap *maskColorMap,
+                             GBool maskInterpolate) override
+    {
+        ImageDraw imageDraw;
+        imageDraw.image = sharedImage(ref, str, width, height, colorMap);
+        imageDraw.mask = sharedMask(ref, maskStr, maskWidth, maskHeight, maskColorMap);
+
+        imageDraw.setTransformationMatrix(state->getCTM());
+        drawLaiers.push_back(imageDraw);
+        if (transparent)
+            SplashOutputDev::drawSoftMaskedImage(state, ref, str, width, height, colorMap, interpolate, maskStr, maskWidth, maskHeight, maskColorMap, maskInterpolate);
+    }
+    //----- path painting
+    void stroke(GfxState *state)
+    {
+        if (transparent)
+            SplashOutputDev::stroke(state);
+    }
+
+    void fill(GfxState *state)
+    {
+        if (transparent)
+            SplashOutputDev::fill(state);
+    }
+
+    void eoFill(GfxState *state)
+    {
+        if (transparent)
+            SplashOutputDev::eoFill(state);
+    }
+
+protected:
+private:
+};
 using namespace poppler;
 
 class poppler::page_renderer_private
@@ -172,7 +428,7 @@ image page_renderer::render_page(const page *p,
     bgColor[0] = d->paper_color & 0xff;
     bgColor[1] = (d->paper_color >> 8) & 0xff;
     bgColor[2] = (d->paper_color >> 16) & 0xff;
-    SplashOutputDev splashOutputDev(splashModeXBGR8, 4, gFalse, bgColor, gTrue);
+    SplashOutputDevice splashOutputDev(splashModeXBGR8, 4, gFalse, bgColor, gTrue);
     splashOutputDev.setFontAntialias(d->hints & text_antialiasing ? gTrue : gFalse);
     splashOutputDev.setVectorAntialias(d->hints & antialiasing ? gTrue : gFalse);
     splashOutputDev.setFreeTypeHinting(d->hints & text_hinting ? gTrue : gFalse, gFalse);
