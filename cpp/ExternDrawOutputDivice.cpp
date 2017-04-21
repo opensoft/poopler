@@ -45,7 +45,7 @@ ImageDataPrivate::ImageDataPrivate(Stream *str, int _width, int _height, GfxImag
     bitsPerChannel = colorMap->getBits();
     channels = colorMap->getNumPixelComps();
     rowSize = (bitsPerChannel * channels * width + 7) / 8;
-    format = static_cast<Color::Format>(colorMap->getColorSpace()->getMode());
+    format = ColorPrivate::formatCast(colorMap->getColorSpace()->getMode());
 
     download(str, inlineImg);
 }
