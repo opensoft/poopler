@@ -62,11 +62,11 @@ ImageDataPrivate::ImageDataPrivate(Stream *str, int _width, int _height, GBool i
     download(str, inlineImg);
 }
 
-void ImageDataPrivate::download(Stream *str, GBool inlineImg)
+void ImageDataPrivate::download(Stream *str, GBool /*inlineImg*/)
 {
     data.resize(rowSize * height);
     str->reset();
-    int readChars = str->doGetChars(data.size(), data.data());
+    str->doGetChars(data.size(), data.data());
     str->close();
 }
 

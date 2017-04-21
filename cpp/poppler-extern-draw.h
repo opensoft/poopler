@@ -98,6 +98,9 @@ using SharedContourData = std::shared_ptr<ContourData>;
 class ProcessStep
 {
 public:
+    virtual ~ProcessStep()
+    {
+    };
     enum StepInformation
     {
         ContourDraw,
