@@ -71,14 +71,14 @@ class ExternDrawOutputDivice : public SplashOutputDev
     SharedImageData sharedImage(ImageStore &imageStore, Object *ref, Args && ...args)
     {
         PdfReference reference;
-        if (ref) {
+        if (ref && ref->isRef()) {
             reference = PdfReference(ref->getRef().num, ref->getRef().gen);
             auto imageIterator = imageStore.find(reference);
             if (imageIterator != imageStore.end() && imageIterator->second)
                 return imageIterator->second;
         }
         auto sharedImageData = std::make_shared<ImageDataPrivate>(args...);
-        if (ref)
+        if (ref && ref->isRef())
             imageStore[reference] = sharedImageData;
         //else
         //    m_inlineImages.push_back(sharedImageData);
