@@ -38,7 +38,8 @@ POPPLER_CPP_EXPORT TransformationMatrix operator+(const Point &p, const Transfor
 
 struct Color
 {
-    std::vector<float> components;
+    // The last component in this container is opacity (an extra component of color) [12:02.37 16.05.2017 aleksey.nikolaev]
+    std::vector<double> components;
     enum Format
     {
         //Device    Color Spaces
@@ -190,7 +191,7 @@ struct ImageDraw : public DrawStep
     std::shared_ptr<ImageData> image;
     std::shared_ptr<ImageData> mask;
     //1. if mask empty and maskColors is not - then maskColors contain min and max pairs for each
-    // color component of pixel which must be excluded form draw (chromokey?) 
+    // color component of pixel which must be excluded form draw (chroma-key) 
     //2. if mask isn't empty maskColors used for set inversion of mask: if maskColors[0] > maskColors[1]
     std::vector<int> maskColors;
     // When image is empty this color used for drawing mask.

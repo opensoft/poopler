@@ -29,7 +29,7 @@ using GlyphStore = std::map<PdfCharReference, SharedContourData>;
 
 struct ColorPrivate : public Color
 {
-    ColorPrivate(/*const*/ GfxColorSpace &colorSpace, /*const*/ GfxColor &color);
+    ColorPrivate(/*const*/ GfxColorSpace &colorSpace, /*const*/ GfxColor &color, const double &transparency);
     static Color::Format formatCast(const GfxColorSpaceMode &gfxColorSpaceMode);
 };
 

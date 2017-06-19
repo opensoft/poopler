@@ -8,7 +8,7 @@ TransformationMatrix &operator<<(TransformationMatrix &t, const double * ctm)
     return t;
 }
 
-ColorPrivate::ColorPrivate(/*const*/ GfxColorSpace &colorSpace, /*const*/ GfxColor &color)
+ColorPrivate::ColorPrivate(/*const*/ GfxColorSpace &colorSpace, /*const*/ GfxColor &color, const double &opacity)
 {
     if (colorSpace.isNonMarking())
         return;
@@ -16,7 +16,9 @@ ColorPrivate::ColorPrivate(/*const*/ GfxColorSpace &colorSpace, /*const*/ GfxCol
     int *colors16_16 = color.c;
     format = formatCast(colorSpace.getMode());
     for (int i = 0; i < colorSpace.getNComps(); i++)
-        components.push_back(colors16_16[i]);
+        components.push_back(colToDbl(colors16_16[i]));
+
+    components.push_back(opacity);
 }
 
 Color::Format ColorPrivate::formatCast(const GfxColorSpaceMode &gfxColorSpaceMode)
@@ -178,7 +180,7 @@ void ExternDrawOutputDivice::stroke(GfxState *state)
 {
     auto contourDraw = std::make_shared<ContourDraw>();
     contourDraw->contourData = sharedContour(state, *state->getPath());
-    contourDraw->strokeColor = ColorPrivate(*state->getStrokeColorSpace(), *state->getStrokeColor());
+    contourDraw->strokeColor = ColorPrivate(*state->getStrokeColorSpace(), *state->getStrokeColor(), state->getStrokeOpacity());
     contourDraw->lineWidth = state->getLineWidth();
     contourDraw->transform << state->getCTM();
 
@@ -192,7 +194,7 @@ void ExternDrawOutputDivice::fill(GfxState *state)
 {
     auto contourDraw = std::make_shared<ContourDraw>();
     contourDraw->contourData = sharedContour(state, *state->getPath());
-    contourDraw->fillColor = ColorPrivate(*state->getFillColorSpace(), *state->getFillColor());
+    contourDraw->fillColor = ColorPrivate(*state->getFillColorSpace(), *state->getFillColor(), state->getFillOpacity());
     contourDraw->transform << state->getCTM();
 
     drawLaiers.push_back(contourDraw);
@@ -205,7 +207,7 @@ void ExternDrawOutputDivice::eoFill(GfxState *state)
 {
     auto contourDraw = std::make_shared<ContourDraw>();
     contourDraw->contourData = sharedContour(state, *state->getPath());
-    contourDraw->fillColor = ColorPrivate(*state->getFillColorSpace(), *state->getFillColor());
+    contourDraw->fillColor = ColorPrivate(*state->getFillColorSpace(), *state->getFillColor(), state->getFillOpacity());
     contourDraw->evenOddFillRule = true;
     contourDraw->transform << state->getCTM();
 
@@ -232,10 +234,10 @@ void ExternDrawOutputDivice::drawChar(GfxState *state, double x, double y, doubl
     contourDraw->transform = origin + m;
 
     if (render == 0 || render == 2 || render == 4 || render == 6)
-        contourDraw->fillColor = ColorPrivate(*state->getFillColorSpace(), *state->getFillColor());
+        contourDraw->fillColor = ColorPrivate(*state->getFillColorSpace(), *state->getFillColor(), state->getFillOpacity());
 
     if (render == 1 || render == 2 || render == 5 || render == 6)
-        contourDraw->strokeColor = ColorPrivate(*state->getStrokeColorSpace(), *state->getStrokeColor());
+        contourDraw->strokeColor = ColorPrivate(*state->getStrokeColorSpace(), *state->getStrokeColor(), state->getStrokeOpacity());
 
     drawLaiers.push_back(contourDraw);
 
@@ -261,7 +263,7 @@ void ExternDrawOutputDivice::drawImageMask(GfxState *state, Object *ref, Stream 
 {
     auto imageDraw = std::make_shared<ImageDrawPrivate>();
     imageDraw->mask = sharedMask(ref, str, width, height, inlineImg);
-    imageDraw->fillColor = ColorPrivate(*state->getFillColorSpace(), *state->getFillColor());
+    imageDraw->fillColor = ColorPrivate(*state->getFillColorSpace(), *state->getFillColor(), state->getFillOpacity());
     imageDraw->setMaskInversion(invert);
     imageDraw->transform << state->getCTM();
     drawLaiers.push_back(imageDraw);
