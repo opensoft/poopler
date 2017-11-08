@@ -22,6 +22,7 @@
 
 #include "poppler-global.h"
 #include "poppler-image.h"
+#include "poppler-extern-draw.h"
 
 namespace poppler
 {
@@ -40,6 +41,25 @@ public:
         text_hinting = 0x00000004
     };
 
+    enum class splash_color_mode {
+        // 1 bit per component, 8 pixels per byte,   MSbit is on the left
+        Mono1,
+        // 1 byte per component, 1 byte per pixel
+        Mono8,
+        // 1 byte per component, 3 bytes per pixel:   RGBRGB...
+        RGB8,
+        // 1 byte per component, 3 bytes per pixel:   BGRBGR...
+        BGR8,
+        // 1 byte per component, 4 bytes per pixel:   XBGRXBGR...
+        XBGR8,
+        // 1 byte per component, 4 bytes per pixel:   CMYKCMYK...
+        CMYK8,
+        // 1 byte per component, 
+        // 4 bytes + n bytes spot colors per pixel:
+        // CMYKSSSSCMYKSSSS... so n == 4, isn't it?
+        DeviceN8,
+        NotSet = -1
+    };
     enum line_mode_enum {
         line_default,
         line_solid,
@@ -66,6 +86,20 @@ public:
                       double xres = 72.0, double yres = 72.0,
                       int x = -1, int y = -1, int w = -1, int h = -1,
                       rotation_enum rotate = rotate_0) const;
+
+    struct SplashBitmapResult : public ProcessStep
+    {
+        StepInformation stepInformation() override
+        {
+            return static_cast<StepInformation>(ProcessStep::Extra + 1);
+        }
+        ImageData imageData;
+    };
+
+    ProcessStepStore extract_process(const page *p,
+                                     double xres = 72.0, double yres = 72.0,
+                                     splash_color_mode splashMode = splash_color_mode::NotSet,
+                                     bool withImageData = true) const;
 
     static bool can_render();
 
