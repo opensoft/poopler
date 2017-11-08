@@ -27,6 +27,7 @@
 #include "poppler-document-private.h"
 #include "poppler-page-private.h"
 #include "poppler-image.h"
+#include "ExternDrawOutputDivice.h"
 
 #include <config.h>
 
@@ -318,6 +319,90 @@ image page_renderer::render_page(const page *p,
     return img.copy();
 #else
     return image();
+#endif
+}
+
+struct SplashBitmapResultPrivate : public page_renderer::SplashBitmapResult
+{
+    SplashBitmapResultPrivate(/*const*/ SplashBitmap &splashBitmap)
+    {
+        imageData.width = splashBitmap.getWidth();
+        imageData.height = splashBitmap.getHeight();
+        imageData.rowSize = splashBitmap.getRowSize();
+        const auto data = reinterpret_cast<unsigned char*>(splashBitmap.getDataPtr());
+        try {
+            imageData.data.assign(data, data + imageData.rowSize * imageData.height);
+        } catch (const std::exception &) {
+            imageData.data.clear();
+        }
+        imageData.format = Color::CalGray;
+        imageData.bitsPerChannel = 8;
+        imageData.channels = 1;
+        switch (splashBitmap.getMode()) {
+        case splashModeMono1:
+            imageData.bitsPerChannel = 1;
+        case splashModeMono8:
+            break;
+        case splashModeRGB8:
+        case splashModeBGR8:
+            imageData.format = Color::DeviceRGB;
+            imageData.channels = 3;
+            break;
+        case splashModeXBGR8:
+            imageData.format = Color::DeviceRGB;
+            imageData.channels = 4;
+            break;
+#if SPLASH_CMYK
+        case splashModeCMYK8:
+            imageData.format = Color::DeviceCMYK;
+            imageData.channels = 4;
+            break;
+        case splashModeDeviceN8:
+            imageData.format = Color::DeviceN;
+            imageData.channels = 8;
+            break;
+#endif
+        default:
+            break;
+        }
+    }
+};
+
+ProcessStepStore page_renderer::extract_process(const page *p, double xres /*= 72.0*/, double yres /*= 72.0*/,
+                                                splash_color_mode splashMode /*= splash_color_mode::NotSet*/,
+                                                bool withImageData) const
+{
+    if (!p) {
+        return ProcessStepStore();
+    }
+
+#if defined(HAVE_SPLASH)
+    page_private *pp = page_private::get(p);
+    PDFDoc *pdfdoc = pp->doc->doc;
+
+    SplashColor bgColor;
+    bgColor[0] = d->paper_color & 0xff;
+    bgColor[1] = (d->paper_color >> 8) & 0xff;
+    bgColor[2] = (d->paper_color >> 16) & 0xff;
+    bool useSplashDraw = splashMode != splash_color_mode::NotSet;
+    SplashColorMode splashColorMode = useSplashDraw ? static_cast<SplashColorMode>(splashMode) : splashModeXBGR8;
+
+    ExternDrawOutputDivice splashOutputDev(useSplashDraw, withImageData, splashColorMode, 1, false, bgColor, true);
+    splashOutputDev.setFontAntialias(d->hints & text_antialiasing ? true : false);
+    splashOutputDev.setVectorAntialias(d->hints & antialiasing ? true : false);
+    splashOutputDev.setFreeTypeHinting(d->hints & text_hinting ? true : false, false);
+    splashOutputDev.startDoc(pdfdoc);
+    pdfdoc->displayPageSlice(&splashOutputDev, pp->index + 1,
+                             xres, yres, 0,
+                             false, true, false,
+                             -1, -1, -1, -1);
+    auto drawingSteps = splashOutputDev.drawingSteps();
+    if(useSplashDraw)
+        drawingSteps.push_back(std::make_shared<SplashBitmapResultPrivate>(*splashOutputDev.getBitmap()));
+
+    return drawingSteps;
+#else
+    return ProcessStepStore();
 #endif
 }
 

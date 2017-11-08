@@ -1,0 +1,8 @@
+Package: poppler-opensoft
+Version: 0.80.0
+Section: misc
+Depends: libjpeg62-turbo, libopenjp2-7, libfontconfig1
+Suggests: libjpeg-dev, libopenjp2-7-dev, libfontconfig1-dev
+Architecture: amd64
+Maintainer: Dmitry Nesterenok <dmitry.nesterenok@opensoftdev.ru>
+Description: Poppler, a PDF rendering library (with pdf structure extractor)
