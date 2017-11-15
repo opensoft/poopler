@@ -42,6 +42,7 @@
 //========================================================================
 
 #include <config.h>
+#include <poppler-config.h>
 
 #ifdef USE_GCC_PRAGMAS
 #pragma implementation
@@ -80,6 +81,7 @@
 #endif
 #include "PDFDoc.h"
 #include "Hints.h"
+#include "UTF.h"
 
 #ifdef MULTITHREADED
 #  define pdfdocLocker()   MutexLocker locker(&mutex)
@@ -151,7 +153,13 @@ PDFDoc::PDFDoc(GooString *fileNameA, GooString *ownerPassword,
 #endif
 
   // try to open file
-  file = GooFile::open(fileName);
+#ifdef _WIN32
+  wchar_t *wFileName = (wchar_t*)utf8ToUtf16(fileName->getCString());
+  file = GooFile::open(wFileName);
+  gfree(wFileName);
+#else
+   file = GooFile::open(fileName);
+#endif
   if (file == NULL) {
     // fopen() has failed.
     // Keep a copy of the errno returned by fopen so that it can be 
