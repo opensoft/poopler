@@ -204,7 +204,11 @@ struct SplashBitmapResultPrivate : public page_renderer::SplashBitmapResult
         imageData.height = splashBitmap.getHeight();
         imageData.rowSize = splashBitmap.getRowSize();
         const auto data = reinterpret_cast<unsigned char*>(splashBitmap.getDataPtr());
-        imageData.data.assign(data, data + imageData.rowSize * imageData.height);
+        try {
+            imageData.data.assign(data, data + imageData.rowSize * imageData.height);
+        } catch (const std::exception &) {
+            imageData.data.clear();
+        }
         imageData.format = Color::CalGray;
         imageData.bitsPerChannel = 8;
         imageData.channels = 1;
