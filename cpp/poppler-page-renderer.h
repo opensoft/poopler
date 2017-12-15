@@ -85,7 +85,9 @@ public:
     };
 
     ProcessStepStore extract_process(const page *p,
-                                     double xres = 72.0, double yres = 72.0, splash_color_mode splashMode = splash_color_mode::NotSet) const;
+                                     double xres = 72.0, double yres = 72.0,
+                                     splash_color_mode splashMode = splash_color_mode::NotSet,
+                                     bool withImageData = true) const;
 
     static bool can_render();
 

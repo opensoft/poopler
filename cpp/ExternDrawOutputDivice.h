@@ -35,8 +35,9 @@ struct ColorPrivate : public Color
 
 struct ImageDataPrivate : public ImageData
 {
-    ImageDataPrivate(Stream *str, int _width, int _height, GfxImageColorMap *colorMap, GBool inlineImg = gFalse);
-    ImageDataPrivate(Stream *str, int _width, int _height, GBool inlineImg = gFalse);
+    ImageDataPrivate(bool isAskForImage, Stream *str, int _width, int _height, GfxImageColorMap *colorMap, GBool inlineImg = gFalse);
+    ImageDataPrivate(bool isAskForImage, Stream *str, int _width, int _height, GBool inlineImg = gFalse);
+private:
     void download(Stream *str, GBool inlineImg);
 };
 
@@ -56,9 +57,11 @@ struct ImageDrawPrivate : public ImageDraw
             maskColors = {0, 1};
     }
 };
+
 class ExternDrawOutputDivice : public SplashOutputDev
 {
-    bool transparent = true;
+    bool m_withSplashDraw = true;
+    bool m_withImageData = true;
 
     ImageStore m_images;
     ImageStore m_imageMasks;
@@ -77,7 +80,7 @@ class ExternDrawOutputDivice : public SplashOutputDev
             if (imageIterator != imageStore.end() && imageIterator->second)
                 return imageIterator->second;
         }
-        auto sharedImageData = std::make_shared<ImageDataPrivate>(args...);
+        auto sharedImageData = std::make_shared<ImageDataPrivate>(m_withImageData, args...);
         if (ref && ref->isRef())
             imageStore[reference] = sharedImageData;
         //else
@@ -96,7 +99,7 @@ class ExternDrawOutputDivice : public SplashOutputDev
     {
         return sharedImage(m_imageMasks, args...);
     }
-    //same as parent needFontUpdate which is not accessible 
+    //same as parent needFontUpdate which is not accessible
     bool fontChanged = true;
     SharedContourData sharedContour(/*const*/ GfxState *state, const CharCode &code);
     SharedContourData sharedContour(/*const*/ GfxState *state, /*const*/ GfxPath &path);
@@ -105,7 +108,7 @@ public:
     {
         return drawLaiers;
     }
-    ExternDrawOutputDivice(bool useSplashDraw, SplashColorMode colorModeA, int bitmapRowPadA,
+    ExternDrawOutputDivice(bool useSplashDraw, bool withImageData, SplashColorMode colorModeA, int bitmapRowPadA,
                            GBool reverseVideoA, SplashColorPtr paperColorA,
                            GBool bitmapTopDownA = gTrue,
                            SplashThinLineMode thinLineMode = splashThinLineDefault,
@@ -260,6 +263,5 @@ protected:
 private:
 };
 }
-
 
 #endif // EXTERNDRAWOUTPUTDIVICE_H

@@ -40,7 +40,7 @@ Color::Format ColorPrivate::formatCast(const GfxColorSpaceMode &gfxColorSpaceMod
     return DeviceGray;
 }
 
-ImageDataPrivate::ImageDataPrivate(Stream *str, int _width, int _height, GfxImageColorMap *colorMap, GBool inlineImg /*= gFalse*/)
+ImageDataPrivate::ImageDataPrivate(bool isAskForImage, Stream *str, int _width, int _height, GfxImageColorMap *colorMap, GBool inlineImg /*= gFalse*/)
 {
     width = _width;
     height = _height;
@@ -48,11 +48,11 @@ ImageDataPrivate::ImageDataPrivate(Stream *str, int _width, int _height, GfxImag
     channels = colorMap->getNumPixelComps();
     rowSize = (bitsPerChannel * channels * width + 7) / 8;
     format = ColorPrivate::formatCast(colorMap->getColorSpace()->getMode());
-
-    download(str, inlineImg);
+    if (isAskForImage)
+        download(str, inlineImg);
 }
 
-ImageDataPrivate::ImageDataPrivate(Stream *str, int _width, int _height, GBool inlineImg /*= gFalse*/)
+ImageDataPrivate::ImageDataPrivate(bool isAskForImage, Stream *str, int _width, int _height, GBool inlineImg /*= gFalse*/)
 {
     width = _width;
     height = _height;
@@ -60,8 +60,8 @@ ImageDataPrivate::ImageDataPrivate(Stream *str, int _width, int _height, GBool i
     channels = 1;
     rowSize = (bitsPerChannel * channels * width + 7) / 8;
     format = Color::DeviceGray;
-
-    download(str, inlineImg);
+    if (isAskForImage)
+        download(str, inlineImg);
 }
 
 void ImageDataPrivate::download(Stream *str, GBool /*inlineImg*/)
@@ -142,20 +142,21 @@ SharedContourData ExternDrawOutputDivice::sharedContour(/*const*/ GfxState *stat
     return std::make_shared<ContourDataPrivate>(path);
 }
 
-ExternDrawOutputDivice::ExternDrawOutputDivice(bool useSplashDraw, SplashColorMode colorModeA, int bitmapRowPadA,
+ExternDrawOutputDivice::ExternDrawOutputDivice(bool useSplashDraw, bool withImageData, SplashColorMode colorModeA, int bitmapRowPadA,
                                                GBool reverseVideoA, SplashColorPtr paperColorA,
                                                GBool bitmapTopDownA, SplashThinLineMode thinLineMode,
                                                GBool overprintPreviewA)
     : SplashOutputDev(colorModeA, bitmapRowPadA, reverseVideoA, paperColorA,
                       bitmapTopDownA, thinLineMode, overprintPreviewA)
 {
-    transparent = useSplashDraw;
+    m_withSplashDraw = useSplashDraw;
+    m_withImageData = withImageData;
 }
 
 void ExternDrawOutputDivice::saveState(GfxState *state)
 {
     drawLaiers.push_back(std::make_shared<StateSave>());
-    if (transparent)
+    if (m_withSplashDraw)
         SplashOutputDev::saveState(state);
 }
 
@@ -163,21 +164,21 @@ void ExternDrawOutputDivice::restoreState(GfxState *state)
 {
     drawLaiers.push_back(std::make_shared<StateRestore>());
     fontChanged = true;
-    if (transparent)
+    if (m_withSplashDraw)
         SplashOutputDev::restoreState(state);
 }
 
 void ExternDrawOutputDivice::updateAll(GfxState *state)
 {
     fontChanged = true;
-    if (transparent)
+    if (m_withSplashDraw)
         SplashOutputDev::updateAll(state);
 }
 
 void ExternDrawOutputDivice::updateFont(GfxState *state)
 {
     fontChanged = true;
-    if (transparent)
+    if (m_withSplashDraw)
         SplashOutputDev::updateFont(state);
 }
 
@@ -191,7 +192,7 @@ void ExternDrawOutputDivice::stroke(GfxState *state)
 
     drawLaiers.push_back(contourDraw);
 
-    if (transparent)
+    if (m_withSplashDraw)
         SplashOutputDev::stroke(state);
 }
 
@@ -204,7 +205,7 @@ void ExternDrawOutputDivice::fill(GfxState *state)
 
     drawLaiers.push_back(contourDraw);
 
-    if (transparent)
+    if (m_withSplashDraw)
         SplashOutputDev::fill(state);
 }
 
@@ -218,7 +219,7 @@ void ExternDrawOutputDivice::eoFill(GfxState *state)
 
     drawLaiers.push_back(contourDraw);
 
-    if (transparent)
+    if (m_withSplashDraw)
         SplashOutputDev::eoFill(state);
 }
 
@@ -246,21 +247,21 @@ void ExternDrawOutputDivice::drawChar(GfxState *state, double x, double y, doubl
 
     drawLaiers.push_back(contourDraw);
 
-    if (transparent)
+    if (m_withSplashDraw)
         SplashOutputDev::drawChar(state, x, y, dx, dy, originX, originY, code, nBytes, u, uLen);
 }
 
 void ExternDrawOutputDivice::beginTextObject(GfxState *state)
 {
     drawLaiers.push_back(std::make_shared<TextStart>());
-    if (transparent)
+    if (m_withSplashDraw)
         SplashOutputDev::beginTextObject(state);
 }
 
 void ExternDrawOutputDivice::endTextObject(GfxState *state)
 {
     drawLaiers.push_back(std::make_shared<TextStop>());
-    if (transparent)
+    if (m_withSplashDraw)
         SplashOutputDev::endTextObject(state);
 }
 
@@ -273,7 +274,7 @@ void ExternDrawOutputDivice::drawImageMask(GfxState *state, Object *ref, Stream 
     imageDraw->transform << state->getCTM();
     drawLaiers.push_back(imageDraw);
 
-    if (transparent && !inlineImg)
+    if (m_withSplashDraw && !inlineImg)
         SplashOutputDev::drawImageMask(state, ref, str, width, height, invert, interpolate, inlineImg);
 }
 
@@ -287,7 +288,7 @@ void ExternDrawOutputDivice::drawImage(GfxState *state, Object *ref, Stream *str
     imageDraw->transform << state->getCTM();
     drawLaiers.push_back(imageDraw);
 
-    if (transparent && !inlineImg)
+    if (m_withSplashDraw && !inlineImg)
         SplashOutputDev::drawImage(state, ref, str, width, height, colorMap, interpolate, maskColors, inlineImg);
 }
 
@@ -300,7 +301,7 @@ void ExternDrawOutputDivice::drawMaskedImage(GfxState *state, Object *ref, Strea
     imageDraw->transform << state->getCTM();
     drawLaiers.push_back(imageDraw);
 
-    if (transparent)
+    if (m_withSplashDraw)
         SplashOutputDev::drawMaskedImage(state, ref, str, width, height, colorMap, interpolate, maskStr, maskWidth, maskHeight, maskInvert, maskInterpolate);
 }
 
@@ -311,7 +312,7 @@ void ExternDrawOutputDivice::drawSoftMaskedImage(GfxState *state, Object *ref, S
     imageDraw->mask = sharedMask(ref, maskStr, maskWidth, maskHeight, maskColorMap);
     imageDraw->transform << state->getCTM();
     drawLaiers.push_back(imageDraw);
-    if (transparent)
+    if (m_withSplashDraw)
         SplashOutputDev::drawSoftMaskedImage(state, ref, str, width, height, colorMap, interpolate, maskStr, maskWidth, maskHeight, maskColorMap, maskInterpolate);
 }
 }

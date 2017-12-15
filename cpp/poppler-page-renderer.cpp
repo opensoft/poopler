@@ -242,7 +242,9 @@ struct SplashBitmapResultPrivate : public page_renderer::SplashBitmapResult
     }
 };
 
-ProcessStepStore page_renderer::extract_process(const page *p, double xres /*= 72.0*/, double yres /*= 72.0*/, splash_color_mode splashMode /*= splash_color_mode::NotSet*/) const
+ProcessStepStore page_renderer::extract_process(const page *p, double xres /*= 72.0*/, double yres /*= 72.0*/,
+                                                splash_color_mode splashMode /*= splash_color_mode::NotSet*/,
+                                                bool withImageData) const
 {
     if (!p) {
         return ProcessStepStore();
@@ -259,7 +261,7 @@ ProcessStepStore page_renderer::extract_process(const page *p, double xres /*= 7
     bool useSplashDraw = splashMode != splash_color_mode::NotSet;
     SplashColorMode splashColorMode = useSplashDraw ? static_cast<SplashColorMode>(splashMode) : splashModeXBGR8;
 
-    ExternDrawOutputDivice splashOutputDev(useSplashDraw, splashColorMode, 1, gFalse, bgColor, gTrue);
+    ExternDrawOutputDivice splashOutputDev(useSplashDraw, withImageData, splashColorMode, 1, gFalse, bgColor, gTrue);
     splashOutputDev.setFontAntialias(d->hints & text_antialiasing ? gTrue : gFalse);
     splashOutputDev.setVectorAntialias(d->hints & antialiasing ? gTrue : gFalse);
     splashOutputDev.setFreeTypeHinting(d->hints & text_hinting ? gTrue : gFalse, gFalse);
