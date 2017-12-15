@@ -73,9 +73,6 @@
 /* Define if you have the iconv() function and it works. */
 #cmakedefine HAVE_ICONV 1
 
-/* Define to 1 if you have the `openjpeg' library (-lopenjpeg). */
-#cmakedefine HAVE_LIBOPENJPEG 1
-
 /* Define to 1 if you have the `z' library (-lz). */
 #cmakedefine HAVE_LIBZ 1
 
@@ -99,9 +96,6 @@
 
 /* Define to 1 if you have the <ndir.h> header file, and it defines `DIR'. */
 #cmakedefine HAVE_NDIR_H 1
-
-/* Define to 1 if you have the <openjpeg.h> header file. */
-#cmakedefine HAVE_OPENJPEG_H 1
 
 /* Define to 1 if you have the `popen' function. */
 #cmakedefine HAVE_POPEN 1
@@ -179,9 +173,6 @@
 
 /* Use single precision arithmetic in the Splash backend */
 #cmakedefine USE_FLOAT 1
-
-/* Defines if use lcms1 */
-#cmakedefine USE_LCMS1 1
 
 /* Version number of package */
 #define VERSION "${POPPLER_VERSION}"

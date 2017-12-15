@@ -35,6 +35,7 @@
 // Copyright (C) 2015 André Guerreiro <aguerreiro1985@gmail.com>
 // Copyright (C) 2015 André Esser <bepandre@hotmail.com>
 // Copyright (C) 2016 Jakub Alba <jakubalba@gmail.com>
+// Copyright (C) 2017 Jean Ghali <jghali@libertysurf.fr>
 //
 // To see a description of the changes please see the Changelog file that
 // came with your tarball or type make ChangeLog if you are building from git
@@ -58,6 +59,7 @@
 #include <string.h>
 #include <time.h>
 #include <sys/stat.h>
+#include "goo/glibc.h"
 #include "goo/gstrtod.h"
 #include "goo/GooString.h"
 #include "goo/gfile.h"
@@ -728,6 +730,11 @@ int PDFDoc::savePageAs(GooString *name, int pageNo)
   FILE *f;
   OutStream *outStr;
   XRef *yRef, *countRef;
+
+  if (file && file->modificationTimeChangedSinceOpen())
+    return errFileChangedSinceOpen;
+
+
   int rootNum = getXRef()->getNumObjects() + 1;
 
   // Make sure that special flags are set, because we are going to read
@@ -899,6 +906,9 @@ int PDFDoc::saveAs(GooString *name, PDFWriteMode mode) {
 }
 
 int PDFDoc::saveAs(OutStream *outStr, PDFWriteMode mode) {
+  if (file && file->modificationTimeChangedSinceOpen())
+    return errFileChangedSinceOpen;
+
   if (!xref->isModified() && mode == writeStandard) {
     // simply copy the original file
     saveWithoutChangesAs (outStr);
@@ -932,6 +942,9 @@ int PDFDoc::saveWithoutChangesAs(GooString *name) {
 
 int PDFDoc::saveWithoutChangesAs(OutStream *outStr) {
   int c;
+
+  if (file && file->modificationTimeChangedSinceOpen())
+    return errFileChangedSinceOpen;
   
   BaseStream *copyStr = str->copy();
   copyStr->reset();
