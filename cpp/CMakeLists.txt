@@ -49,7 +49,7 @@ set(poppler_cpp_SRCS
   ExternDrawOutputDivice.cpp
 )
 
-add_library(poppler-cpp SHARED ${poppler_cpp_SRCS} ${poppler_cpp_HEADERS} ${poppler_cpp_Private_HEADERS})
+add_library(poppler-cpp ${poppler_cpp_SRCS} ${poppler_cpp_HEADERS} ${poppler_cpp_Private_HEADERS})
 set_target_properties(poppler-cpp PROPERTIES VERSION 0.3.0 SOVERSION 0)
 if(MINGW)
     get_target_property(POPPLER_CPP_SOVERSION poppler-cpp SOVERSION)
