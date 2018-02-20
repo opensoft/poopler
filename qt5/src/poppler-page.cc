@@ -1,7 +1,7 @@
 /* poppler-page.cc: qt interface to poppler
  * Copyright (C) 2005, Net Integration Technologies, Inc.
  * Copyright (C) 2005, Brad Hards <bradh@frogmouth.net>
- * Copyright (C) 2005-2017, Albert Astals Cid <aacid@kde.org>
+ * Copyright (C) 2005-2018, Albert Astals Cid <aacid@kde.org>
  * Copyright (C) 2005, Stefan Kebekus <stefan.kebekus@math.uni-koeln.de>
  * Copyright (C) 2006-2011, Pino Toscano <pino@kde.org>
  * Copyright (C) 2008 Carlos Garcia Campos <carlosgc@gnome.org>
@@ -19,7 +19,7 @@
  * Copyright (C) 2016, Hanno Meyer-Thurow <h.mth@web.de>
  * Copyright (C) 2017, Oliver Sander <oliver.sander@tu-dresden.de>
  * Copyright (C) 2017 Adrian Johnson <ajohnson@redneon.com>
- * Copyright (C) 2017 Klarälvdalens Datakonsult AB, a KDAB Group company, <info@kdab.com>. Work sponsored by the LiMux project of the city of Munich
+ * Copyright (C) 2017, 2018 Klarälvdalens Datakonsult AB, a KDAB Group company, <info@kdab.com>. Work sponsored by the LiMux project of the city of Munich
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -70,25 +70,46 @@
 
 namespace Poppler {
 
-class Qt5SplashOutputDev : public SplashOutputDev
+class TextExtractionAbortHelper
 {
 public:
-  Qt5SplashOutputDev(SplashColorMode colorMode, int bitmapRowPad,
-                      GBool reverseVideo, bool ignorePaperColorA, SplashColorPtr paperColor,
-                      GBool bitmapTopDown, SplashThinLineMode thinLineMode,
-                      GBool overprintPreview)
-    : SplashOutputDev(colorMode, bitmapRowPad, reverseVideo, paperColor, bitmapTopDown, thinLineMode, overprintPreview)
-    , partialUpdateCallback(nullptr)
-    , shouldDoPartialUpdateCallback(nullptr)
-    , ignorePaperColor(ignorePaperColorA)
+  TextExtractionAbortHelper(Page::ShouldAbortQueryFunc shouldAbortCallback, const QVariant &payloadA)
   {
+    shouldAbortExtractionCallback = shouldAbortCallback;
+    payload = payloadA;
   }
 
-  void setPartialUpdateCallbackData(Page::RenderToImagePartialUpdateFunc callback, Page::ShouldRenderToImagePartialQueryFunc shouldDoCallback, const QVariant &payloadA)
+  Page::ShouldAbortQueryFunc shouldAbortExtractionCallback = nullptr;
+  QVariant payload;
+};
+
+class OutputDevCallbackHelper
+{
+public:
+  void setCallbacks(Page::RenderToImagePartialUpdateFunc callback, Page::ShouldRenderToImagePartialQueryFunc shouldDoCallback, Page::ShouldAbortQueryFunc shouldAbortCallback, const QVariant &payloadA)
   {
     partialUpdateCallback = callback;
     shouldDoPartialUpdateCallback = shouldDoCallback;
+    shouldAbortRenderCallback = shouldAbortCallback;
     payload = payloadA;
+  }
+
+  Page::RenderToImagePartialUpdateFunc partialUpdateCallback = nullptr;
+  Page::ShouldRenderToImagePartialQueryFunc shouldDoPartialUpdateCallback = nullptr;
+  Page::ShouldAbortQueryFunc shouldAbortRenderCallback = nullptr;
+  QVariant payload;
+};
+
+class Qt5SplashOutputDev : public SplashOutputDev, public OutputDevCallbackHelper
+{
+public:
+  Qt5SplashOutputDev(SplashColorMode colorModeA, int bitmapRowPadA,
+                      GBool reverseVideoA, bool ignorePaperColorA, SplashColorPtr paperColorA,
+                      GBool bitmapTopDownA, SplashThinLineMode thinLineMode,
+                      GBool overprintPreviewA)
+    : SplashOutputDev(colorModeA, bitmapRowPadA, reverseVideoA, paperColorA, bitmapTopDownA, thinLineMode, overprintPreviewA)
+    , ignorePaperColor(ignorePaperColorA)
+  {
   }
 
   void dump() override
@@ -100,11 +121,11 @@ public:
 
   QImage getXBGRImage(bool takeImageData)
   {
-    SplashBitmap *bitmap = getBitmap();
+    SplashBitmap *b = getBitmap();
 
-    const int bw = bitmap->getWidth();
-    const int bh = bitmap->getHeight();
-    const int brs = bitmap->getRowSize();
+    const int bw = b->getWidth();
+    const int bh = b->getHeight();
+    const int brs = b->getRowSize();
 
     // If we use DeviceN8, convert to XBGR8.
     // If requested, also transfer Splash's internal alpha channel.
@@ -116,8 +137,8 @@ public:
             ? QImage::Format_ARGB32_Premultiplied
             : QImage::Format_RGB32;
 
-    if (bitmap->convertToXBGR(mode)) {
-      SplashColorPtr data = takeImageData ? bitmap->takeData() : bitmap->getDataPtr();
+    if (b->convertToXBGR(mode)) {
+      SplashColorPtr data = takeImageData ? b->takeData() : b->getDataPtr();
 
       if (QSysInfo::ByteOrder == QSysInfo::BigEndian) {
         // Convert byte order from RGBX to XBGR.
@@ -143,29 +164,17 @@ public:
   }
 
 private:
-  Page::RenderToImagePartialUpdateFunc partialUpdateCallback;
-  Page::ShouldRenderToImagePartialQueryFunc shouldDoPartialUpdateCallback;
-  QVariant payload;
   bool ignorePaperColor;
 };
 
 
-class QImageDumpingArthurOutputDev : public ArthurOutputDev
+class QImageDumpingArthurOutputDev : public ArthurOutputDev, public OutputDevCallbackHelper
 {
 public:
   QImageDumpingArthurOutputDev(QPainter *painter, QImage *i)
     : ArthurOutputDev(painter)
-    , partialUpdateCallback(nullptr)
-    , shouldDoPartialUpdateCallback(nullptr)
     , image(i)
   {
-  }
-
-  void setPartialUpdateCallbackData(Page::RenderToImagePartialUpdateFunc callback, Page::ShouldRenderToImagePartialQueryFunc shouldDoCallback, const QVariant &payloadA)
-  {
-    partialUpdateCallback = callback;
-    shouldDoPartialUpdateCallback = shouldDoCallback;
-    payload = payloadA;
   }
 
   void dump() override
@@ -176,9 +185,6 @@ public:
   }
 
 private:
-  Page::RenderToImagePartialUpdateFunc partialUpdateCallback;
-  Page::ShouldRenderToImagePartialQueryFunc shouldDoPartialUpdateCallback;
-  QVariant payload;
   QImage *image;
 };
 
@@ -192,9 +198,9 @@ Link* PageData::convertLinkActionToLink(::LinkAction * a, const QRectF &linkArea
 Link* PageData::convertLinkActionToLink(::LinkAction * a, DocumentData *parentDoc, const QRectF &linkArea)
 {
   if ( !a )
-    return NULL;
+    return nullptr;
 
-  Link * popplerLink = NULL;
+  Link * popplerLink = nullptr;
   switch ( a->getKind() )
   {
     case actionGoTo:
@@ -221,7 +227,7 @@ Link* PageData::convertLinkActionToLink(::LinkAction * a, DocumentData *parentDo
     {
       LinkLaunch * e = (LinkLaunch *)a;
       GooString * p = e->getParams();
-      popplerLink = new LinkExecute( linkArea, e->getFileName()->getCString(), p ? p->getCString() : 0 );
+      popplerLink = new LinkExecute( linkArea, e->getFileName()->getCString(), p ? p->getCString() : nullptr );
     }
     break;
 
@@ -325,7 +331,7 @@ Link* PageData::convertLinkActionToLink(::LinkAction * a, DocumentData *parentDo
       if ( lrn->hasScreenAnnot() )
         reference = lrn->getScreenAnnot();
 
-      popplerLink = new LinkRendition( linkArea, lrn->getMedia() ? lrn->getMedia()->copy() : NULL, lrn->getOperation(), UnicodeParsedString( lrn->getScript() ), reference );
+      popplerLink = new LinkRendition( linkArea, lrn->getMedia() ? lrn->getMedia()->copy() : nullptr, lrn->getOperation(), UnicodeParsedString( lrn->getScript() ), reference );
     }
     break;
 
@@ -354,9 +360,9 @@ inline TextPage *PageData::prepareTextSearch(const QString &text, Page::Rotation
   const int rotation = (int)rotate * 90;
 
   // fetch ourselves a textpage
-  TextOutputDev td(NULL, gTrue, 0, gFalse, gFalse);
+  TextOutputDev td(nullptr, gTrue, 0, gFalse, gFalse);
   parentDoc->doc->displayPage( &td, index + 1, 72, 72, rotation, false, true, false,
-    NULL, NULL, NULL, NULL, gTrue);
+    nullptr, nullptr, nullptr, nullptr, gTrue);
   TextPage *textPage=td.takeText();
 
   return textPage;
@@ -403,7 +409,7 @@ Page::Page(DocumentData *doc, int index) {
   m_page->index = index;
   m_page->parentDoc = doc;
   m_page->page = doc->doc->getPage(m_page->index + 1);
-  m_page->transition = 0;
+  m_page->transition = nullptr;
 }
 
 Page::~Page()
@@ -412,7 +418,34 @@ Page::~Page()
   delete m_page;
 }
 
-static bool renderToArthur(ArthurOutputDev *arthur_output, QPainter *painter, PageData *page, double xres, double yres, int x, int y, int w, int h, Page::Rotation rotate, Page::PainterFlags flags)
+// Callback that filters out everything but form fields
+static auto annotDisplayDecideCbk = [](Annot *annot, void *user_data)
+{
+  // Hide everything but forms
+  return (annot->getType() == Annot::typeWidget);
+};
+
+// A nullptr, but with the type of a function pointer
+// Needed to make the ternary operator happy.
+static GBool (*nullAnnotCallBack)(Annot *annot, void *user_data) = nullptr;
+
+static auto shouldAbortRenderInternalCallback = [](void *user_data)
+{
+  OutputDevCallbackHelper *helper = reinterpret_cast<OutputDevCallbackHelper*>(user_data);
+  return helper->shouldAbortRenderCallback(helper->payload);
+};
+
+static auto shouldAbortExtractionInternalCallback = [](void *user_data)
+{
+  TextExtractionAbortHelper *helper = reinterpret_cast<TextExtractionAbortHelper*>(user_data);
+  return helper->shouldAbortExtractionCallback(helper->payload);
+};
+
+// A nullptr, but with the type of a function pointer
+// Needed to make the ternary operator happy.
+static GBool (*nullAbortCallBack)(void *user_data) = nullptr;
+
+static bool renderToArthur(QImageDumpingArthurOutputDev *arthur_output, QPainter *painter, PageData *page, double xres, double yres, int x, int y, int w, int h, Page::Rotation rotate, Page::PainterFlags flags)
 {
   const bool savePainter = !(flags & Page:: DontSaveAndRestore);
   if (savePainter)
@@ -427,17 +460,7 @@ static bool renderToArthur(ArthurOutputDev *arthur_output, QPainter *painter, Pa
 
   const GBool hideAnnotations = page->parentDoc->m_hints & Document::HideAnnotations;
 
-  // Callback that filters out everything but form fields
-  auto annotDisplayDecideCbk = [](Annot *annot, void *user_data)
-  {
-    // Hide everything but forms
-    return (annot->getType() == Annot::typeWidget);
-  };
-
-  // A nullptr, but with the type of a function pointer
-  // Needed to make the ternary operator below happy.
-  GBool (*nullCallBack)(Annot *annot, void *user_data) = nullptr;
-
+  OutputDevCallbackHelper *abortHelper = arthur_output;
   page->parentDoc->doc->displayPageSlice(arthur_output,
                                           page->index + 1,
                                           xres,
@@ -450,9 +473,9 @@ static bool renderToArthur(ArthurOutputDev *arthur_output, QPainter *painter, Pa
                                           y,
                                           w,
                                           h,
-                                          nullptr,
-                                          nullptr,
-                                          (hideAnnotations) ? annotDisplayDecideCbk : nullCallBack);
+                                          abortHelper->shouldAbortRenderCallback ? shouldAbortRenderInternalCallback : nullAbortCallBack,
+                                          abortHelper,
+                                          (hideAnnotations) ? annotDisplayDecideCbk : nullAnnotCallBack);
   if (savePainter)
     painter->restore();
   return true;
@@ -464,6 +487,11 @@ QImage Page::renderToImage(double xres, double yres, int x, int y, int w, int h,
 }
 
 QImage Page::renderToImage(double xres, double yres, int x, int y, int w, int h, Rotation rotate, RenderToImagePartialUpdateFunc partialUpdateCallback, ShouldRenderToImagePartialQueryFunc shouldDoPartialUpdateCallback, const QVariant &payload) const
+{
+  return renderToImage(xres, yres, x, y, w, h, rotate, partialUpdateCallback, shouldDoPartialUpdateCallback, nullptr, payload);
+}
+
+QImage Page::renderToImage(double xres, double yres, int x, int y, int w, int h, Rotation rotate, RenderToImagePartialUpdateFunc partialUpdateCallback, ShouldRenderToImagePartialQueryFunc shouldDoPartialUpdateCallback, ShouldAbortQueryFunc shouldAbortRenderCallback, const QVariant &payload) const
 {
   int rotation = (int)rotate * 90;
   QImage img;
@@ -521,12 +549,12 @@ QImage Page::renderToImage(double xres, double yres, int x, int y, int w, int h,
                   colorMode, 4,
                   gFalse,
                   ignorePaperColor,
-                  ignorePaperColor ? NULL : bgColor,
+                  ignorePaperColor ? nullptr : bgColor,
                   gTrue,
                   thinLineMode,
                   overprintPreview);
 
-      splash_output.setPartialUpdateCallbackData(partialUpdateCallback, shouldDoPartialUpdateCallback, payload);
+      splash_output.setCallbacks(partialUpdateCallback, shouldDoPartialUpdateCallback, shouldAbortRenderCallback, payload);
 
       splash_output.setFontAntialias(m_page->parentDoc->m_hints & Document::TextAntialiasing ? gTrue : gFalse);
       splash_output.setVectorAntialias(m_page->parentDoc->m_hints & Document::Antialiasing ? gTrue : gFalse);
@@ -537,21 +565,11 @@ QImage Page::renderToImage(double xres, double yres, int x, int y, int w, int h,
 
       const GBool hideAnnotations = m_page->parentDoc->m_hints & Document::HideAnnotations;
 
-      // Callback that filters out everything but form fields
-      auto annotDisplayDecideCbk = [](Annot *annot, void *user_data)
-      {
-        // Hide everything but forms
-        return (annot->getType() == Annot::typeWidget);
-      };
-
-      // A nullptr, but with the type of a function pointer
-      // Needed to make the ternary operator below happy.
-      GBool (*nullCallBack)(Annot *annot, void *user_data) = nullptr;
-
+      OutputDevCallbackHelper *abortHelper = &splash_output;
       m_page->parentDoc->doc->displayPageSlice(&splash_output, m_page->index + 1, xres, yres,
                                                rotation, false, true, false, x, y, w, h,
-                                               nullptr, nullptr,
-                                               (hideAnnotations) ? annotDisplayDecideCbk : nullCallBack,
+                                               shouldAbortRenderCallback ? shouldAbortRenderInternalCallback : nullAbortCallBack, abortHelper,
+                                               (hideAnnotations) ? annotDisplayDecideCbk : nullAnnotCallBack,
                                                nullptr, gTrue);
 
       img = splash_output.getXBGRImage( true /* takeImageData */);
@@ -572,13 +590,16 @@ QImage Page::renderToImage(double xres, double yres, int x, int y, int w, int h,
 
       QPainter painter(&tmpimg);
       QImageDumpingArthurOutputDev arthur_output(&painter, &tmpimg);
-      arthur_output.setPartialUpdateCallbackData(partialUpdateCallback, shouldDoPartialUpdateCallback, payload);
+      arthur_output.setCallbacks(partialUpdateCallback, shouldDoPartialUpdateCallback, shouldAbortRenderCallback, payload);
       renderToArthur(&arthur_output, &painter, m_page, xres, yres, x, y, w, h, rotate, DontSaveAndRestore);
       painter.end();
       img = tmpimg;
       break;
     }
   }
+
+  if (shouldAbortRenderCallback && shouldAbortRenderCallback(payload))
+      return QImage();
 
   return img;
 }
@@ -594,7 +615,7 @@ bool Page::renderToPainter(QPainter* painter, double xres, double yres, int x, i
       return false;
     case Poppler::Document::ArthurBackend:
     {
-        ArthurOutputDev arthur_output(painter);
+        QImageDumpingArthurOutputDev arthur_output(painter, nullptr);
         return renderToArthur(&arthur_output, painter, m_page, xres, yres, x, y, w, h, rotate, flags);
     }
   }
@@ -603,7 +624,7 @@ bool Page::renderToPainter(QPainter* painter, double xres, double yres, int x, i
 
 QImage Page::thumbnail() const
 {
-  unsigned char* data = 0;
+  unsigned char* data = nullptr;
   int w = 0;
   int h = 0;
   int rowstride = 0;
@@ -627,10 +648,10 @@ QString Page::text(const QRectF &r, TextLayout textLayout) const
   QString result;
   
   const GBool rawOrder = textLayout == RawOrderLayout;
-  output_dev = new TextOutputDev(0, gFalse, 0, rawOrder, gFalse);
+  output_dev = new TextOutputDev(nullptr, gFalse, 0, rawOrder, gFalse);
   m_page->parentDoc->doc->displayPageSlice(output_dev, m_page->index + 1, 72, 72,
       0, false, true, false, -1, -1, -1, -1,
-      NULL, NULL, NULL, NULL, gTrue);
+      nullptr, nullptr, nullptr, nullptr, gTrue);
   if (r.isNull())
   {
     rect = m_page->page->getCropBox();
@@ -713,21 +734,28 @@ QList<QRectF> Page::search(const QString &text, SearchFlags flags, Rotation rota
 
 QList<TextBox*> Page::textList(Rotation rotate) const
 {
+    return textList(rotate, nullptr, QVariant());
+}
+
+QList<TextBox*> Page::textList(Rotation rotate, ShouldAbortQueryFunc shouldAbortExtractionCallback, const QVariant &closure) const
+{
   TextOutputDev *output_dev;
   
   QList<TextBox*> output_list;
   
-  output_dev = new TextOutputDev(0, gFalse, 0, gFalse, gFalse);
+  output_dev = new TextOutputDev(nullptr, gFalse, 0, gFalse, gFalse);
   
   int rotation = (int)rotate * 90;
 
+  TextExtractionAbortHelper abortHelper(shouldAbortExtractionCallback, closure);
   m_page->parentDoc->doc->displayPageSlice(output_dev, m_page->index + 1, 72, 72,
       rotation, false, false, false, -1, -1, -1, -1,
-      NULL, NULL, NULL, NULL, gTrue);
+      shouldAbortExtractionCallback ? shouldAbortExtractionInternalCallback : nullAbortCallBack, &abortHelper,
+      nullptr, nullptr, gTrue);
 
   TextWordList *word_list = output_dev->makeWordList();
   
-  if (!word_list) {
+  if (!word_list || (shouldAbortExtractionCallback && shouldAbortExtractionCallback(closure))) {
     delete output_dev;
     return output_list;
   }
@@ -787,21 +815,21 @@ Link *Page::action( PageAction act ) const
     Object o = m_page->page->getActions();
     if (!o.isDict())
     {
-      return 0;
+      return nullptr;
     }
     Dict *dict = o.getDict();
     const char *key = act == Page::Opening ? "O" : "C";
     Object o2 = dict->lookup((char*)key);
     ::LinkAction *lact = ::LinkAction::parseAction(&o2, m_page->parentDoc->doc->getCatalog()->getBaseURI() );
-    Link *popplerLink = NULL;
-    if (lact != NULL)
+    Link *popplerLink = nullptr;
+    if (lact != nullptr)
     {
       popplerLink = m_page->convertLinkActionToLink(lact, QRectF());
       delete lact;
     }
     return popplerLink;
   }
-  return 0;
+  return nullptr;
 }
 
 QSizeF Page::pageSizeF() const
@@ -880,7 +908,7 @@ QList<FormField*> Page::formFields() const
   for (int i = 0; i < formcount; ++i)
   {
     ::FormWidget *fm = form->getWidget(i);
-    FormField * ff = NULL;
+    FormField * ff = nullptr;
     switch (fm->getType())
     {
       case formButton:

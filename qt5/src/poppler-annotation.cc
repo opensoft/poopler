@@ -1,5 +1,5 @@
 /* poppler-annotation.cc: qt interface to poppler
- * Copyright (C) 2006, 2009, 2012-2015 Albert Astals Cid <aacid@kde.org>
+ * Copyright (C) 2006, 2009, 2012-2015, 2018 Albert Astals Cid <aacid@kde.org>
  * Copyright (C) 2006, 2008, 2010 Pino Toscano <pino@kde.org>
  * Copyright (C) 2012, Guillermo A. Amaral B. <gamaral@kde.org>
  * Copyright (C) 2012-2014 Fabio D'Urso <fabiodurso@hotmail.it>
@@ -59,10 +59,10 @@ Annotation * AnnotationUtils::createAnnotation( const QDomElement & annElement )
 {
     // safety check on annotation element
     if ( !annElement.hasAttribute( QStringLiteral("type") ) )
-        return 0;
+        return nullptr;
 
     // build annotation of given type
-    Annotation * annotation = 0;
+    Annotation * annotation = nullptr;
     int typeNumber = annElement.attribute( QStringLiteral("type") ).toInt();
     switch ( typeNumber )
     {
@@ -124,8 +124,8 @@ QDomElement AnnotationUtils::findChildElement( const QDomNode & parentNode,
 //BEGIN Annotation implementation
 AnnotationPrivate::AnnotationPrivate()
     : flags( 0 ), revisionScope ( Annotation::Root ),
-    revisionType ( Annotation::None ), pdfAnnot ( 0 ), pdfPage ( 0 ),
-    parentDoc ( 0 )
+    revisionType ( Annotation::None ), pdfAnnot ( nullptr ), pdfPage ( nullptr ),
+    parentDoc ( nullptr )
 {
 }
 
@@ -306,7 +306,7 @@ QRectF AnnotationPrivate::fromPdfRectangle(const PDFRectangle &r) const
 // the transformation produced by fillTransformationMTX, but we can't use
 // fillTransformationMTX here because it relies on the native annotation
 // object's boundary rect to be already set up.
-PDFRectangle AnnotationPrivate::boundaryToPdfRectangle(const QRectF &r, int flags) const
+PDFRectangle AnnotationPrivate::boundaryToPdfRectangle(const QRectF &r, int rFlags) const
 {
     Q_ASSERT ( pdfPage );
 
@@ -333,7 +333,7 @@ PDFRectangle AnnotationPrivate::boundaryToPdfRectangle(const QRectF &r, int flag
         br_y = swp;
     }
 
-    const int rotationFixUp = ( flags & Annotation::FixedRotation ) ? pageRotate : 0;
+    const int rotationFixUp = ( rFlags & Annotation::FixedRotation ) ? pageRotate : 0;
     const double width = br_x - tl_x;
     const double height = br_y - tl_y;
 
@@ -391,13 +391,13 @@ QList<Annotation*> AnnotationPrivate::findAnnotations(::Page *pdfPage, DocumentD
 
     // Create Annotation objects and tie to their native Annot
     QList<Annotation*> res;
-    for ( uint j = 0; j < numAnnotations; j++ )
+    for ( uint k = 0; k < numAnnotations; k++ )
     {
         // get the j-th annotation
-        Annot * ann = annots->getAnnot( j );
+        Annot * ann = annots->getAnnot( k );
         if ( !ann )
         {
-            error(errInternal, -1, "Annot {0:ud} is null", j);
+            error(errInternal, -1, "Annot {0:ud} is null", k);
             continue;
         }
 
@@ -413,7 +413,7 @@ QList<Annotation*> AnnotationPrivate::findAnnotations(::Page *pdfPage, DocumentD
             continue;
 
         /* Create Annotation of the right subclass */
-        Annotation * annotation = 0;
+        Annotation * annotation = nullptr;
         Annot::AnnotSubtype subType = ann->getType();
 
         switch ( subType )
@@ -544,7 +544,8 @@ QList<Annotation*> AnnotationPrivate::findAnnotations(::Page *pdfPage, DocumentD
                 if (!wantScreenAnnotations)
                     continue;
                 AnnotScreen * screenann = static_cast< AnnotScreen * >( ann );
-                if (!screenann->getAction())
+                // TODO Support other link types than Link::Rendition in ScreenAnnotation
+                if (!screenann->getAction() || screenann->getAction()->getKind() != actionRendition)
                   continue;
                 ScreenAnnotation * s = new ScreenAnnotation();
                 annotation = s;
@@ -760,7 +761,7 @@ QList<Annotation*> AnnotationPrivate::findAnnotations(::Page *pdfPage, DocumentD
 
 Ref AnnotationPrivate::pdfObjectReference() const
 {
-    if (pdfAnnot == 0)
+    if (pdfAnnot == nullptr)
     {
         const Ref invalid_ref = { -1, -1 };
         return invalid_ref;
@@ -772,7 +773,7 @@ Ref AnnotationPrivate::pdfObjectReference() const
 Link* AnnotationPrivate::additionalAction( Annotation::AdditionalActionType type ) const
 {
     if ( pdfAnnot->getType() != Annot::typeScreen && pdfAnnot->getType() != Annot::typeWidget )
-        return 0;
+        return nullptr;
 
     Annot::AdditionalActionsType actionType = Annot::actionCursorEntering;
     switch ( type )
@@ -789,13 +790,13 @@ Link* AnnotationPrivate::additionalAction( Annotation::AdditionalActionType type
         case Annotation::PageInvisibleAction: actionType = Annot::actionPageInvisible; break;
     }
 
-    ::LinkAction *linkAction = 0;
+    ::LinkAction *linkAction = nullptr;
     if ( pdfAnnot->getType() == Annot::typeScreen )
         linkAction = static_cast<AnnotScreen*>( pdfAnnot )->getAdditionalAction( actionType );
     else
         linkAction = static_cast<AnnotWidget*>( pdfAnnot )->getAdditionalAction( actionType );
 
-    Link *link = 0;
+    Link *link = nullptr;
 
     if ( linkAction )
         link = PageData::convertLinkActionToLink( linkAction, parentDoc, QRectF() );
@@ -805,7 +806,7 @@ Link* AnnotationPrivate::additionalAction( Annotation::AdditionalActionType type
 
 void AnnotationPrivate::addAnnotationToPage(::Page *pdfPage, DocumentData *doc, const Annotation * ann)
 {
-    if (ann->d_ptr->pdfAnnot != 0)
+    if (ann->d_ptr->pdfAnnot != nullptr)
     {
         error(errIO, -1, "Annotation is already tied");
         return;
@@ -820,7 +821,7 @@ void AnnotationPrivate::addAnnotationToPage(::Page *pdfPage, DocumentData *doc, 
 
 void AnnotationPrivate::removeAnnotationFromPage(::Page *pdfPage, const Annotation * ann)
 {
-    if (ann->d_ptr->pdfAnnot == 0)
+    if (ann->d_ptr->pdfAnnot == nullptr)
     {
         error(errIO, -1, "Annotation is not tied");
         return;
@@ -1623,7 +1624,7 @@ Annotation::Style Annotation::style() const
             border_effect = static_cast<AnnotGeometry*>(d->pdfAnnot)->getBorderEffect();
             break;
         default:
-            border_effect = 0;
+            border_effect = nullptr;
     }
     if (border_effect)
     {
@@ -1665,7 +1666,7 @@ Annotation::Popup Annotation::popup() const
         return d->popup;
 
     Popup w;
-    AnnotPopup *popup = 0;
+    AnnotPopup *popup = nullptr;
     int flags = -1; // Not initialized
 
     const AnnotMarkup *markupann = dynamic_cast<const AnnotMarkup*>(d->pdfAnnot);
@@ -2205,7 +2206,7 @@ void TextAnnotation::setCalloutPoints( const QVector<QPointF> &points )
 
     if (count == 0)
     {
-        ftextann->setCalloutLine(0);
+        ftextann->setCalloutLine(nullptr);
         return;
     }
 
@@ -3464,7 +3465,7 @@ class InkAnnotationPrivate : public AnnotationPrivate
         QList< QLinkedList<QPointF> > inkPaths;
 
         // helper
-        AnnotPath **toAnnotPaths(const QList< QLinkedList<QPointF> > &inkPaths);
+        AnnotPath **toAnnotPaths(const QList< QLinkedList<QPointF> > &paths);
 };
 
 InkAnnotationPrivate::InkAnnotationPrivate()
@@ -3478,12 +3479,12 @@ Annotation * InkAnnotationPrivate::makeAlias()
 }
 
 // Note: Caller is required to delete array elements and the array itself after use
-AnnotPath **InkAnnotationPrivate::toAnnotPaths(const QList< QLinkedList<QPointF> > &inkPaths)
+AnnotPath **InkAnnotationPrivate::toAnnotPaths(const QList< QLinkedList<QPointF> > &paths)
 {
-    const int pathsNumber = inkPaths.size();
+    const int pathsNumber = paths.size();
     AnnotPath **res = new AnnotPath*[pathsNumber];
     for (int i = 0; i < pathsNumber; ++i)
-        res[i] = toAnnotPath( inkPaths[i] );
+        res[i] = toAnnotPath( paths[i] );
     return res;
 }
 
@@ -3682,7 +3683,7 @@ class LinkAnnotationPrivate : public AnnotationPrivate
 };
 
 LinkAnnotationPrivate::LinkAnnotationPrivate()
-    : AnnotationPrivate(), linkDestination( 0 ), linkHLMode( LinkAnnotation::Invert )
+    : AnnotationPrivate(), linkDestination( nullptr ), linkHLMode( LinkAnnotation::Invert )
 {
 }
 
@@ -3698,7 +3699,7 @@ Annotation * LinkAnnotationPrivate::makeAlias()
 
 Annot* LinkAnnotationPrivate::createNativeAnnot(::Page *destPage, DocumentData *doc)
 {
-    return 0; // Not implemented
+    return nullptr; // Not implemented
 }
 
 LinkAnnotation::LinkAnnotation()
@@ -4148,7 +4149,7 @@ class FileAttachmentAnnotationPrivate : public AnnotationPrivate
 };
 
 FileAttachmentAnnotationPrivate::FileAttachmentAnnotationPrivate()
-    : AnnotationPrivate(), icon( QStringLiteral("PushPin") ), embfile( 0 )
+    : AnnotationPrivate(), icon( QStringLiteral("PushPin") ), embfile( nullptr )
 {
 }
 
@@ -4164,7 +4165,7 @@ Annotation * FileAttachmentAnnotationPrivate::makeAlias()
 
 Annot* FileAttachmentAnnotationPrivate::createNativeAnnot(::Page *destPage, DocumentData *doc)
 {
-    return 0; // Not implemented
+    return nullptr; // Not implemented
 }
 
 FileAttachmentAnnotation::FileAttachmentAnnotation()
@@ -4252,7 +4253,7 @@ class SoundAnnotationPrivate : public AnnotationPrivate
 };
 
 SoundAnnotationPrivate::SoundAnnotationPrivate()
-    : AnnotationPrivate(), icon( QStringLiteral("Speaker") ), sound( 0 )
+    : AnnotationPrivate(), icon( QStringLiteral("Speaker") ), sound( nullptr )
 {
 }
 
@@ -4268,7 +4269,7 @@ Annotation * SoundAnnotationPrivate::makeAlias()
 
 Annot* SoundAnnotationPrivate::createNativeAnnot(::Page *destPage, DocumentData *doc)
 {
-    return 0; // Not implemented
+    return nullptr; // Not implemented
 }
 
 SoundAnnotation::SoundAnnotation()
@@ -4356,7 +4357,7 @@ class MovieAnnotationPrivate : public AnnotationPrivate
 };
 
 MovieAnnotationPrivate::MovieAnnotationPrivate()
-    : AnnotationPrivate(), movie( 0 )
+    : AnnotationPrivate(), movie( nullptr )
 {
 }
 
@@ -4372,7 +4373,7 @@ Annotation * MovieAnnotationPrivate::makeAlias()
 
 Annot* MovieAnnotationPrivate::createNativeAnnot(::Page *destPage, DocumentData *doc)
 {
-    return 0; // Not implemented
+    return nullptr; // Not implemented
 }
 
 MovieAnnotation::MovieAnnotation()
@@ -4460,7 +4461,7 @@ class ScreenAnnotationPrivate : public AnnotationPrivate
 };
 
 ScreenAnnotationPrivate::ScreenAnnotationPrivate()
-    : AnnotationPrivate(), action( 0 )
+    : AnnotationPrivate(), action( nullptr )
 {
 }
 
@@ -4480,7 +4481,7 @@ Annotation * ScreenAnnotationPrivate::makeAlias()
 
 Annot* ScreenAnnotationPrivate::createNativeAnnot(::Page *destPage, DocumentData *doc)
 {
-    return 0; // Not implemented
+    return nullptr; // Not implemented
 }
 
 ScreenAnnotation::ScreenAnnotation()
@@ -4552,7 +4553,7 @@ Annotation * WidgetAnnotationPrivate::makeAlias()
 
 Annot* WidgetAnnotationPrivate::createNativeAnnot(::Page *destPage, DocumentData *doc)
 {
-    return 0; // Not implemented
+    return nullptr; // Not implemented
 }
 
 WidgetAnnotation::WidgetAnnotation(WidgetAnnotationPrivate &dd)
@@ -4622,7 +4623,7 @@ class RichMediaAnnotation::Instance::Private
 {
     public:
         Private()
-            : params( 0 )
+            : params( nullptr )
         {
         }
 
@@ -4630,6 +4631,9 @@ class RichMediaAnnotation::Instance::Private
         {
             delete params;
         }
+
+        Private(const Private &) = delete;
+        Private& operator=(const Private &) = delete;
 
         RichMediaAnnotation::Instance::Type type;
         RichMediaAnnotation::Params *params;
@@ -4675,6 +4679,9 @@ class RichMediaAnnotation::Configuration::Private
             qDeleteAll( instances );
             instances.clear();
         }
+
+        Private(const Private &) = delete;
+        Private& operator=(const Private &) = delete;
 
         RichMediaAnnotation::Configuration::Type type;
         QString name;
@@ -4728,7 +4735,7 @@ class RichMediaAnnotation::Asset::Private
 {
     public:
         Private()
-            : embeddedFile( 0 )
+            : embeddedFile( nullptr )
         {
         }
 
@@ -4736,6 +4743,9 @@ class RichMediaAnnotation::Asset::Private
         {
             delete embeddedFile;
         }
+
+        Private(const Private &) = delete;
+        Private& operator=(const Private &) = delete;
 
         QString name;
         EmbeddedFile *embeddedFile;
@@ -4784,6 +4794,9 @@ class RichMediaAnnotation::Content::Private
             qDeleteAll( assets );
             assets.clear();
         }
+
+        Private(const Private &) = delete;
+        Private& operator=(const Private &) = delete;
 
         QList< RichMediaAnnotation::Configuration* > configurations;
         QList< RichMediaAnnotation::Asset* > assets;
@@ -4891,7 +4904,7 @@ class RichMediaAnnotation::Settings::Private : public QSharedData
 {
     public:
         Private()
-            : activation( 0 ), deactivation( 0 )
+            : activation( nullptr ), deactivation( nullptr )
         {
         }
 
@@ -4935,7 +4948,7 @@ class RichMediaAnnotationPrivate : public AnnotationPrivate
 {
     public:
         RichMediaAnnotationPrivate()
-            : settings( 0 ), content( 0 )
+            : settings( nullptr ), content( nullptr )
         {
         }
 
@@ -4955,7 +4968,7 @@ class RichMediaAnnotationPrivate : public AnnotationPrivate
             Q_UNUSED( destPage );
             Q_UNUSED( doc );
 
-            return 0;
+            return nullptr;
         }
 
         RichMediaAnnotation::Settings *settings;

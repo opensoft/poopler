@@ -15,7 +15,7 @@
 // under GPL version 2 or later
 //
 // Copyright (C) 2006 Dom Lachowicz <cinamod@hotmail.com>
-// Copyright (C) 2007-2010, 2012, 2016, 2017 Albert Astals Cid <aacid@kde.org>
+// Copyright (C) 2007-2010, 2012, 2016-2018 Albert Astals Cid <aacid@kde.org>
 // Copyright (C) 2010 Hib Eris <hib@hiberis.nl>
 // Copyright (C) 2011 Vittal Aithal <vittal.aithal@cognidox.com>
 // Copyright (C) 2012, 2013, 2016, 2017 Adrian Johnson <ajohnson@redneon.com>
@@ -120,7 +120,7 @@ static const ArgDesc argDesc[] = {
    "print usage information"},
   {"-?",      argFlag,     &printHelp,     0,
    "print usage information"},
-  {NULL}
+  {}
 };
 
 static void printInfoString(Dict *infoDict, const char *key, const char *text,
@@ -291,12 +291,6 @@ static void printStruct(const StructElement *element, unsigned indent) {
   }
 }
 
-struct RefCompare {
-  bool operator() (const Ref& lhs, const Ref& rhs) const {
-    return lhs.num < rhs.num;
-  }
-};
-
 struct GooStringCompare {
   bool operator() (GooString* lhs, GooString* rhs) const {
     return lhs->cmp(const_cast<GooString*>(rhs)) < 0;
@@ -413,10 +407,9 @@ static void printDestinations(PDFDoc *doc, UnicodeMap *uMap) {
 	  printf(" \"");
 	  Unicode *u;
 	  char buf[8];
-	  int n, len;
-	  len = TextStringToUCS4(it.first, &u);
-	  for (int i = 0; i < len; i++) {
-	    n = uMap->mapUnicode(u[i], buf, sizeof(buf));
+	  const int len = TextStringToUCS4(it.first, &u);
+	  for (int j = 0; j < len; j++) {
+	    const int n = uMap->mapUnicode(u[j], buf, sizeof(buf));
 	    fwrite(buf, 1, n, stdout);
 	  }
 	  gfree(u);
@@ -608,7 +601,6 @@ int main(int argc, char *argv[]) {
   GooString *fileName;
   GooString *ownerPW, *userPW;
   UnicodeMap *uMap;
-  Object info;
   FILE *f;
   GBool ok;
   int exitCode;
@@ -661,12 +653,12 @@ int main(int argc, char *argv[]) {
   if (ownerPassword[0] != '\001') {
     ownerPW = new GooString(ownerPassword);
   } else {
-    ownerPW = NULL;
+    ownerPW = nullptr;
   }
   if (userPassword[0] != '\001') {
     userPW = new GooString(userPassword);
   } else {
-    userPW = NULL;
+    userPW = nullptr;
   }
 
   if (fileName->cmp("-") == 0) {

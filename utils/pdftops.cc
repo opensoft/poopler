@@ -16,7 +16,7 @@
 // under GPL version 2 or later
 //
 // Copyright (C) 2006 Kristian Høgsberg <krh@redhat.com>
-// Copyright (C) 2007-2008, 2010, 2015, 2017 Albert Astals Cid <aacid@kde.org>
+// Copyright (C) 2007-2008, 2010, 2015, 2017, 2018 Albert Astals Cid <aacid@kde.org>
 // Copyright (C) 2009 Till Kamppeter <till.kamppeter@gmail.com>
 // Copyright (C) 2009 Sanjoy Mahajan <sanjoy@mit.edu>
 // Copyright (C) 2009, 2011, 2012, 2014-2016 William Bader <williambader@hotmail.com>
@@ -202,7 +202,7 @@ static const ArgDesc argDesc[] = {
    "print usage information"},
   {"-?",          argFlag,     &printHelp,      0,
    "print usage information"},
-  {NULL}
+  {}
 };
 
 int main(int argc, char *argv[]) {
@@ -310,12 +310,12 @@ int main(int argc, char *argv[]) {
   if (ownerPassword[0] != '\001') {
     ownerPW = new GooString(ownerPassword);
   } else {
-    ownerPW = NULL;
+    ownerPW = nullptr;
   }
   if (userPassword[0] != '\001') {
     userPW = new GooString(userPassword);
   } else {
-    userPW = NULL;
+    userPW = nullptr;
   }
   if (fileName->cmp("-") == 0) {
       delete fileName;
@@ -387,7 +387,7 @@ int main(int argc, char *argv[]) {
 
   // write PostScript file
   psOut = new PSOutputDev(psFileName->getCString(), doc,
-			  NULL, pages, mode,
+			  nullptr, pages, mode,
 			  paperWidth,
 			  paperHeight,
                           noCrop,

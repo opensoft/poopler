@@ -6,7 +6,7 @@
 //
 // Copyright 2015 André Guerreiro <aguerreiro1985@gmail.com>
 // Copyright 2015 André Esser <bepandre@hotmail.com>
-// Copyright 2015, 2017 Albert Astals Cid <aacid@kde.org>
+// Copyright 2015, 2017, 2018 Albert Astals Cid <aacid@kde.org>
 // Copyright 2016 Markus Kilås <digital@markuspage.com>
 // Copyright 2017 Hans-Ulrich Jüttner <huj@froreich-bioscientia.de>
 // Copyright (C) 2017 Adrian Johnson <ajohnson@redneon.com>
@@ -104,17 +104,17 @@ static const ArgDesc argDesc[] = {
    "print usage information"},
   {"-?",      argFlag,     &printHelp,     0,
    "print usage information"},
-  {NULL}
+  {}
 };
 
 
 int main(int argc, char *argv[])
 {
-  PDFDoc *doc = NULL;
+  PDFDoc *doc = nullptr;
   unsigned int sigCount;
-  GooString * fileName = NULL;
-  SignatureInfo *sig_info = NULL;
-  char *time_str = NULL;
+  GooString * fileName = nullptr;
+  SignatureInfo *sig_info = nullptr;
+  char *time_str = nullptr;
   std::vector<FormWidgetSignature*> sig_widgets;
   globalParams = new GlobalParams();
 
@@ -139,7 +139,7 @@ int main(int argc, char *argv[])
   fileName = new GooString(argv[argc - 1]);
 
   // open PDF file
-  doc = PDFDocFactory().createPDFDoc(*fileName, NULL, NULL);
+  doc = PDFDocFactory().createPDFDoc(*fileName, nullptr, nullptr);
 
   if (!doc->isOk()) {
     exitCode = 1;
@@ -208,7 +208,6 @@ int main(int argc, char *argv[])
     std::vector<Goffset> ranges = sig_widgets.at(i)->getSignedRangeBounds();
     if (ranges.size() == 4)
     {
-      int i = 0;
       printf("  - Signed Ranges: [%lld - %lld], [%lld - %lld]\n",
              ranges[0], ranges[1], ranges[2], ranges[3]);
       Goffset checked_file_size;

@@ -16,6 +16,7 @@
 // Copyright (C) 2011 Carlos Garcia Campos <carlosgc@gnome.org>
 // Copyright (C) 2013 Yury G. Kudryashov <urkud.urkud@gmail.com>
 // Copyright (C) 2014, 2017 Adrian Johnson <ajohnson@redneon.com>
+// Copyright (C) 2018 Albert Astals Cid <aacid@kde.org>
 //
 // To see a description of the changes please see the Changelog file that
 // came with your tarball or type make ChangeLog if you are building from git
@@ -77,7 +78,7 @@ static ArgDesc argDesc[] = {
    "print usage information"},
   {"-?",      argFlag,     &printHelp,     0,
    "print usage information"},
-  {NULL}
+  { }
 };
 
 int main(int argc, char *argv[]) {
@@ -90,7 +91,7 @@ int main(int argc, char *argv[]) {
   char *p;
   GBool ok;
   int exitCode;
-  GooList *embeddedFiles = NULL;
+  GooList *embeddedFiles = nullptr;
   int nFiles, nPages, n, i, j;
   FileSpec *fileSpec;
   Page *page;
@@ -138,12 +139,12 @@ int main(int argc, char *argv[]) {
   if (ownerPassword[0] != '\001') {
     ownerPW = new GooString(ownerPassword);
   } else {
-    ownerPW = NULL;
+    ownerPW = nullptr;
   }
   if (userPassword[0] != '\001') {
     userPW = new GooString(userPassword);
   } else {
-    userPW = NULL;
+    userPW = nullptr;
   }
 
   doc = PDFDocFactory().createPDFDoc(*fileName, ownerPW, userPW);

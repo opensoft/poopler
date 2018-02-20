@@ -15,7 +15,7 @@
 // All changes made under the Poppler project to this file are licensed
 // under GPL version 2 or later
 //
-// Copyright (C) 2007-2008, 2010 Albert Astals Cid <aacid@kde.org>
+// Copyright (C) 2007-2008, 2010, 2018 Albert Astals Cid <aacid@kde.org>
 // Copyright (C) 2010 Hib Eris <hib@hiberis.nl>
 // Copyright (C) 2010 Jakob Voss <jakob.voss@gbv.de>
 // Copyright (C) 2012, 2013, 2017 Adrian Johnson <ajohnson@redneon.com>
@@ -109,13 +109,13 @@ static const ArgDesc argDesc[] = {
    "print usage information"},
   {"-?",      argFlag,     &printHelp,     0,
    "print usage information"},
-  {NULL}
+  {}
 };
 
 int main(int argc, char *argv[]) {
   PDFDoc *doc;
   GooString *fileName;
-  char *imgRoot = NULL;
+  char *imgRoot = nullptr;
   GooString *ownerPW, *userPW;
   ImageOutputDev *imgOut;
   GBool ok;
@@ -151,12 +151,12 @@ int main(int argc, char *argv[]) {
   if (ownerPassword[0] != '\001') {
     ownerPW = new GooString(ownerPassword);
   } else {
-    ownerPW = NULL;
+    ownerPW = nullptr;
   }
   if (userPassword[0] != '\001') {
     userPW = new GooString(userPassword);
   } else {
-    userPW = NULL;
+    userPW = nullptr;
   }
   if (fileName->cmp("-") == 0) {
       delete fileName;

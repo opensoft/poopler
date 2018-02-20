@@ -16,7 +16,7 @@
 // under GPL version 2 or later
 //
 // Copyright (C) 2006 Dominic Lachowicz <cinamod@hotmail.com>
-// Copyright (C) 2007-2008, 2010, 2011, 2017 Albert Astals Cid <aacid@kde.org>
+// Copyright (C) 2007-2008, 2010, 2011, 2017, 2018 Albert Astals Cid <aacid@kde.org>
 // Copyright (C) 2009 Jan Jockusch <jan@jockusch.de>
 // Copyright (C) 2010, 2013 Hib Eris <hib@hiberis.nl>
 // Copyright (C) 2010 Kenneth Berland <ken@hero.com>
@@ -142,7 +142,7 @@ static const ArgDesc argDesc[] = {
    "print usage information"},
   {"-?",       argFlag,     &printHelp,     0,
    "print usage information"},
-  {NULL}
+  {}
 };
 
 static std::string myStringReplace(const std::string &inString, const std::string &oldToken, const std::string &newToken) {
@@ -246,12 +246,12 @@ int main(int argc, char *argv[]) {
   if (ownerPassword[0] != '\001') {
     ownerPW = new GooString(ownerPassword);
   } else {
-    ownerPW = NULL;
+    ownerPW = nullptr;
   }
   if (userPassword[0] != '\001') {
     userPW = new GooString(userPassword);
   } else {
-    userPW = NULL;
+    userPW = nullptr;
   }
 
   if (fileName->cmp("-") == 0) {
@@ -361,7 +361,7 @@ int main(int argc, char *argv[]) {
 
   // write text file
   if (htmlMeta && bbox) { // htmlMeta && is superfluous but makes gcc happier
-    textOut = new TextOutputDev(NULL, physLayout, fixedPitch, rawOrder, htmlMeta);
+    textOut = new TextOutputDev(nullptr, physLayout, fixedPitch, rawOrder, htmlMeta);
 
     if (textOut->isOk()) {
       if (bboxLayout) {
@@ -547,7 +547,7 @@ void printWordBBox(FILE *f, PDFDoc *doc, TextOutputDev *textOut, int first, int 
     fprintf(f, "  <page width=\"%f\" height=\"%f\">\n",doc->getPageMediaWidth(page), doc->getPageMediaHeight(page));
     doc->displayPage(textOut, page, resolution, resolution, 0, gTrue, gFalse, gFalse);
     TextWordList *wordlist = textOut->makeWordList();
-    const int word_length = wordlist != NULL ? wordlist->getLength() : 0;
+    const int word_length = wordlist != nullptr ? wordlist->getLength() : 0;
     TextWord *word;
     double xMinA, yMinA, xMaxA, yMaxA;
     if (word_length == 0)

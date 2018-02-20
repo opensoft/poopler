@@ -2,6 +2,7 @@
  * Copyright (C) 2005, Net Integration Technologies, Inc.
  * Copyright (C) 2005, Brad Hards <bradh@frogmouth.net>
  * Copyright (C) 2015, Arseniy Lartsev <arseniy@alumni.chalmers.se>
+ * Copyright (C) 2018 Albert Astals Cid <aacid@kde.org>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -100,12 +101,15 @@ class POPPLER_QT5_EXPORT PageTransition {
 
   /** \brief copy constructor */
   PageTransition(const PageTransition &pt);
-  
+
+  /** \brief assignment operator \since 0.63 */
+  PageTransition& operator=(const PageTransition &other);
+
   /**
      Destructor
   */
   ~PageTransition();
-  
+
   /**
      \brief Get type of the transition.
   */

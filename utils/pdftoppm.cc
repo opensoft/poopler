@@ -18,7 +18,7 @@
 // Copyright (C) 2009 Michael K. Johnson <a1237@danlj.org>
 // Copyright (C) 2009 Shen Liang <shenzhuxi@gmail.com>
 // Copyright (C) 2009 Stefan Thomas <thomas@eload24.com>
-// Copyright (C) 2009-2011, 2015 Albert Astals Cid <aacid@kde.org>
+// Copyright (C) 2009-2011, 2015, 2018 Albert Astals Cid <aacid@kde.org>
 // Copyright (C) 2010, 2012, 2017 Adrian Johnson <ajohnson@redneon.com>
 // Copyright (C) 2010 Hib Eris <hib@hiberis.nl>
 // Copyright (C) 2010 Jonathan Liu <net147@gmail.com>
@@ -76,10 +76,10 @@ static double y_resolution = 150.0;
 static int scaleTo = 0;
 static int x_scaleTo = 0;
 static int y_scaleTo = 0;
-static int x = 0;
-static int y = 0;
-static int w = 0;
-static int h = 0;
+static int param_x = 0;
+static int param_y = 0;
+static int param_w = 0;
+static int param_h = 0;
 static int sz = 0;
 static GBool useCropBox = gFalse;
 static GBool mono = gFalse;
@@ -136,13 +136,13 @@ static const ArgDesc argDesc[] = {
   {"-scale-to-y",      argInt,       &y_scaleTo,    0,
    "scales each page vertically to fit in scale-to-y pixels"},
 
-  {"-x",      argInt,      &x,             0,
+  {"-x",      argInt,      &param_x,             0,
    "x-coordinate of the crop area top left corner"},
-  {"-y",      argInt,      &y,             0,
+  {"-y",      argInt,      &param_y,             0,
    "y-coordinate of the crop area top left corner"},
-  {"-W",      argInt,      &w,             0,
+  {"-W",      argInt,      &param_w,             0,
    "width of crop area in pixels (default is 0)"},
-  {"-H",      argInt,      &h,             0,
+  {"-H",      argInt,      &param_h,             0,
    "height of crop area in pixels (default is 0)"},
   {"-sz",     argInt,      &sz,            0,
    "size of crop square in pixels (sets W and H)"},
@@ -209,7 +209,7 @@ static const ArgDesc argDesc[] = {
    "print usage information"},
   {"-?",      argFlag,     &printHelp,     0,
    "print usage information"},
-  {NULL}
+  {}
 };
 
 static GBool parseJpegOptions()
@@ -225,7 +225,7 @@ static GBool parseJpegOptions()
       nextOpt = comma + 1;
     } else {
       opt.Set(nextOpt);
-      nextOpt = NULL;
+      nextOpt = nullptr;
     }
     //here opt is "<optN>=<valN> "
     const char *equal = strchr(opt.getCString(), '=');
@@ -287,7 +287,7 @@ static void savePageSlice(PDFDoc *doc,
   params.jpegProgressive = jpegProgressive;
   params.tiffCompression.Set(TiffCompressionStr);
 
-  if (ppmFile != NULL) {
+  if (ppmFile != nullptr) {
     if (png) {
       bitmap->writeImgFile(splashFormatPng, ppmFile, x_resolution, y_resolution);
     } else if (jpeg) {
@@ -380,8 +380,8 @@ static int numberOfCharacters(unsigned int n)
 
 int main(int argc, char *argv[]) {
   PDFDoc *doc;
-  GooString *fileName = NULL;
-  char *ppmRoot = NULL;
+  GooString *fileName = nullptr;
+  char *ppmRoot = nullptr;
   char *ppmFile;
   GooString *ownerPW, *userPW;
   SplashColor paperColor;
@@ -464,15 +464,15 @@ int main(int argc, char *argv[]) {
   if (ownerPassword[0]) {
     ownerPW = new GooString(ownerPassword);
   } else {
-    ownerPW = NULL;
+    ownerPW = nullptr;
   }
   if (userPassword[0]) {
     userPW = new GooString(userPassword);
   } else {
-    userPW = NULL;
+    userPW = nullptr;
   }
 
-  if (fileName == NULL) {
+  if (fileName == nullptr) {
     fileName = new GooString("fd://0");
   }
   if (fileName->cmp("-") == 0) {
@@ -548,7 +548,7 @@ int main(int argc, char *argv[]) {
   
 #endif // UTILS_USE_PTHREADS
   
-  if (sz != 0) w = h = sz;
+  if (sz != 0) param_w = param_h = sz;
   pg_num_len = numberOfCharacters(doc->getNumPages());
   for (pg = firstPage; pg <= lastPage; ++pg) {
     if (printOnlyEven && pg % 2 == 0) continue;
@@ -583,7 +583,7 @@ int main(int argc, char *argv[]) {
       pg_w = pg_h;
       pg_h = tmp;
     }
-    if (ppmRoot != NULL) {
+    if (ppmRoot != nullptr) {
       const char *ext = png ? "png" : (jpeg || jpegcmyk) ? "jpg" : tiff ? "tif" : mono ? "pbm" : gray ? "pgm" : "ppm";
       if (singleFile) {
         ppmFile = new char[strlen(ppmRoot) + 1 + strlen(ext) + 1];
@@ -593,11 +593,11 @@ int main(int argc, char *argv[]) {
         sprintf(ppmFile, "%s-%0*d.%s", ppmRoot, pg_num_len, pg, ext);
       }
     } else {
-      ppmFile = NULL;
+      ppmFile = nullptr;
     }
 #ifndef UTILS_USE_PTHREADS
     // process job in main thread
-    savePageSlice(doc, splashOut, pg, x, y, w, h, pg_w, pg_h, ppmFile);
+    savePageSlice(doc, splashOut, pg, param_x, param_y, param_w, param_h, pg_w, pg_h, ppmFile);
     
     delete[] ppmFile;
 #else

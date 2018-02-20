@@ -14,6 +14,7 @@
 // Copyright (C) 2006 Takashi Iwai <tiwai@suse.de>
 // Copyright (C) 2014, 2017 Adrian Johnson <ajohnson@redneon.com>
 // Copyright (C) 2017 Oliver Sander <oliver.sander@tu-dresden.de>
+// Copyright (C) 2018 Albert Astals Cid <aacid@kde.org>
 //
 // To see a description of the changes please see the Changelog file that
 // came with your tarball or type make ChangeLog if you are building from git
@@ -48,10 +49,10 @@ SplashFontFile *SplashFTFontFile::loadType1Font(SplashFTFontEngine *engineA,
 
   if (src->isFile) {
     if (FT_New_Face(engineA->lib, src->fileName->getCString(), 0, &faceA))
-      return NULL;
+      return nullptr;
   } else {
     if (FT_New_Memory_Face(engineA->lib, (const FT_Byte *)src->buf, src->bufLen, 0, &faceA))
-      return NULL;
+      return nullptr;
   }
   codeToGIDA = (int *)gmallocn(256, sizeof(int));
   for (i = 0; i < 256; ++i) {
@@ -80,10 +81,10 @@ SplashFontFile *SplashFTFontFile::loadCIDFont(SplashFTFontEngine *engineA,
 
   if (src->isFile) {
     if (FT_New_Face(engineA->lib, src->fileName->getCString(), 0, &faceA))
-      return NULL;
+      return nullptr;
   } else {
     if (FT_New_Memory_Face(engineA->lib, (const FT_Byte *)src->buf, src->bufLen, 0, &faceA))
-      return NULL;
+      return nullptr;
   }
 
   return new SplashFTFontFile(engineA, idA, src,
@@ -100,10 +101,10 @@ SplashFontFile *SplashFTFontFile::loadTrueTypeFont(SplashFTFontEngine *engineA,
 
   if (src->isFile) {
     if (FT_New_Face(engineA->lib, src->fileName->getCString(), faceIndexA, &faceA))
-      return NULL;
+      return nullptr;
   } else {
     if (FT_New_Memory_Face(engineA->lib, (const FT_Byte *)src->buf, src->bufLen, faceIndexA, &faceA))
-      return NULL;
+      return nullptr;
   }
 
   return new SplashFTFontFile(engineA, idA, src,
@@ -112,11 +113,11 @@ SplashFontFile *SplashFTFontFile::loadTrueTypeFont(SplashFTFontEngine *engineA,
 
 SplashFTFontFile::SplashFTFontFile(SplashFTFontEngine *engineA,
 				   SplashFontFileID *idA,
-				   SplashFontSrc *src,
+				   SplashFontSrc *srcA,
 				   FT_Face faceA,
 				   int *codeToGIDA, int codeToGIDLenA,
 				   GBool trueTypeA, GBool type1A):
-  SplashFontFile(idA, src)
+  SplashFontFile(idA, srcA)
 {
   engine = engineA;
   face = faceA;
