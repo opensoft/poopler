@@ -3,6 +3,8 @@
  * Copyright (C) 2013 Adrian Johnson <ajohnson@redneon.com>
  * Copyright (C) 2014, Hans-Peter Deifel <hpdeifel@gmx.de>
  * Copyright (C) 2016 Jakub Alba <jakubalba@gmail.com>
+ * Copyright (C) 2018, Suzuki Toshiya <mpsuzuki@hiroshima-u.ac.jp>
+ * Copyright (C) 2018, Adam Reichold <adam.reichold@t-online.de>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -66,6 +68,16 @@ void delete_all(const Collection &c)
 {
     delete_all(c.begin(), c.end());
 }
+
+struct text_box_data
+{
+    ~text_box_data();
+
+    ustring text;
+    rectf bbox;
+    std::vector<rectf> char_bboxes;
+    bool has_space_after;
+};
 
 }
 
