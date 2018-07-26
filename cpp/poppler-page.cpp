@@ -295,6 +295,8 @@ text_box_data::~text_box_data() = default;
 
 text_box::~text_box() = default;
 
+text_box& text_box::operator=(text_box&& a) = default;
+text_box::text_box(text_box&& a) = default;
 text_box::text_box(text_box_data *data) : m_data{data}
 {
 }
