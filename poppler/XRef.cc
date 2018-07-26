@@ -293,7 +293,7 @@ XRef::XRef() {
   init();
 }
 
-XRef::XRef(Object *trailerDictA) {
+XRef::XRef(const Object *trailerDictA) {
   init();
 
   if (trailerDictA->isDict())
@@ -393,7 +393,7 @@ XRef::~XRef() {
 #endif
 }
 
-XRef *XRef::copy() {
+XRef *XRef::copy() const {
   XRef *xref = new XRef();
   xref->str = str->copy();
   xref->strOwner = gTrue;
@@ -574,7 +574,7 @@ GBool XRef::readXRefTable(Parser *parser, Goffset *pos, std::vector<Goffset> *fo
       goto err0;
     }
     n = obj.getInt();
-    if (first < 0 || n < 0 || first + n < 0) {
+    if (first < 0 || n < 0 || first > INT_MAX - n) {
       goto err0;
     }
     if (first + n > size) {
@@ -789,6 +789,9 @@ GBool XRef::readXRefStreamSection(Stream *xrefStr, int *w, int first, int n) {
   unsigned long long offset, gen;
   int type, c, i, j;
 
+  if (first > INT_MAX - n) {
+    return gFalse;
+  }
   if (first + n < 0) {
     return gFalse;
   }
@@ -866,7 +869,6 @@ GBool XRef::constructXRef(GBool *wasReconstructed, GBool needCatalogDict) {
   char buf[256];
   Goffset pos;
   int num, gen;
-  int newSize;
   int streamEndsSize;
   char *p;
   GBool gotRoot;
@@ -940,11 +942,11 @@ GBool XRef::constructXRef(GBool *wasReconstructed, GBool needCatalogDict) {
           if ((*p & 0xff) == 0) {
             //new line, continue with next line!
             str->getLine(buf, 256);
-            p = buf - 1;
-          }
-	  do {
+            p = buf;
+          } else {
 	    ++p;
-	  } while (*p && isspace(*p & 0xff));
+	  }
+	  while (*p && isspace(*p & 0xff)) ++p;
 	  if (isdigit(*p & 0xff)) {
 	    gen = atoi(p);
 	    do {
@@ -954,14 +956,18 @@ GBool XRef::constructXRef(GBool *wasReconstructed, GBool needCatalogDict) {
               if ((*p & 0xff) == 0) {
                 //new line, continue with next line!
                 str->getLine(buf, 256);
-                p = buf - 1;
-              }
-	      do {
+                p = buf;
+              } else {
 		++p;
-	      } while (*p && isspace(*p & 0xff));
+	      }
+	      while (*p && isspace(*p & 0xff)) ++p;
 	      if (!strncmp(p, "obj", 3)) {
 		if (num >= size) {
-		  newSize = (num + 1 + 255) & ~255;
+		  if (unlikely(num >= INT_MAX - 1 - 255)) {
+		    error(errSyntaxError, -1, "Bad object number");
+		    return gFalse;
+		  }
+		  const int newSize = (num + 1 + 255) & ~255;
 		  if (newSize < 0) {
 		    error(errSyntaxError, -1, "Bad object number");
 		    return gFalse;
@@ -1022,7 +1028,7 @@ GBool XRef::constructXRef(GBool *wasReconstructed, GBool needCatalogDict) {
 }
 
 void XRef::setEncryption(int permFlagsA, GBool ownerPasswordOkA,
-			 Guchar *fileKeyA, int keyLengthA,
+			 const Guchar *fileKeyA, int keyLengthA,
 			 int encVersionA, int encRevisionA,
 			 CryptAlgorithm encAlgorithmA) {
   int i;
@@ -1057,14 +1063,14 @@ void XRef::getEncryptionParameters(Guchar **fileKeyA, CryptAlgorithm *encAlgorit
   }
 }
 
-GBool XRef::okToPrint(GBool ignoreOwnerPW) {
+GBool XRef::okToPrint(GBool ignoreOwnerPW) const {
   return (!ignoreOwnerPW && ownerPasswordOk) || (permFlags & permPrint);
 }
 
 // we can print at high res if we are only doing security handler revision
 // 2 (and we are allowed to print at all), or with security handler rev
 // 3 and we are allowed to print, and bit 12 is set.
-GBool XRef::okToPrintHighRes(GBool ignoreOwnerPW) {
+GBool XRef::okToPrintHighRes(GBool ignoreOwnerPW) const {
   if (encrypted) {
     if (2 == encRevision) {
       return (okToPrint(ignoreOwnerPW));
@@ -1079,27 +1085,27 @@ GBool XRef::okToPrintHighRes(GBool ignoreOwnerPW) {
   }
 }
 
-GBool XRef::okToChange(GBool ignoreOwnerPW) {
+GBool XRef::okToChange(GBool ignoreOwnerPW) const {
   return (!ignoreOwnerPW && ownerPasswordOk) || (permFlags & permChange);
 }
 
-GBool XRef::okToCopy(GBool ignoreOwnerPW) {
+GBool XRef::okToCopy(GBool ignoreOwnerPW) const {
   return (!ignoreOwnerPW && ownerPasswordOk) || (permFlags & permCopy);
 }
 
-GBool XRef::okToAddNotes(GBool ignoreOwnerPW) {
+GBool XRef::okToAddNotes(GBool ignoreOwnerPW) const {
   return (!ignoreOwnerPW && ownerPasswordOk) || (permFlags & permNotes);
 }
 
-GBool XRef::okToFillForm(GBool ignoreOwnerPW) {
+GBool XRef::okToFillForm(GBool ignoreOwnerPW) const {
   return (!ignoreOwnerPW && ownerPasswordOk) || (permFlags & permFillForm);
 }
 
-GBool XRef::okToAccessibility(GBool ignoreOwnerPW) {
+GBool XRef::okToAccessibility(GBool ignoreOwnerPW) const {
   return (!ignoreOwnerPW && ownerPasswordOk) || (permFlags & permAccessibility);
 }
 
-GBool XRef::okToAssemble(GBool ignoreOwnerPW) {
+GBool XRef::okToAssemble(GBool ignoreOwnerPW) const {
   return (!ignoreOwnerPW && ownerPasswordOk) || (permFlags & permAssemble);
 }
 
@@ -1135,7 +1141,7 @@ Object XRef::fetch(int num, int gen, int recursion) {
 
   case xrefEntryUncompressed:
   {
-    if (e->gen != gen) {
+    if (e->gen != gen || e->offset < 0) {
       goto err;
     }
     parser = new Parser(this,
@@ -1351,7 +1357,7 @@ void XRef::add(int num, int gen, Goffset offs, GBool used) {
   }
 }
 
-void XRef::setModifiedObject (Object* o, Ref r) {
+void XRef::setModifiedObject (const Object* o, Ref r) {
   xrefLocker();
   if (r.num < 0 || r.num >= size) {
     error(errInternal, -1,"XRef::setModifiedObject on unknown ref: {0:d}, {1:d}\n", r.num, r.gen);
@@ -1363,7 +1369,7 @@ void XRef::setModifiedObject (Object* o, Ref r) {
   setModified();
 }
 
-Ref XRef::addIndirectObject (Object* o) {
+Ref XRef::addIndirectObject (const Object *o) {
   int entryIndexToUse = -1;
   for (int i = 1; entryIndexToUse == -1 && i < size; ++i) {
     XRefEntry *e = getEntry(i, false /* complainIfMissing */);

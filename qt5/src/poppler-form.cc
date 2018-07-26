@@ -1,10 +1,12 @@
 /* poppler-form.h: qt interface to poppler
  * Copyright (C) 2007-2008, 2011, Pino Toscano <pino@kde.org>
- * Copyright (C) 2008, 2011, 2012, 2015-2017 Albert Astals Cid <aacid@kde.org>
+ * Copyright (C) 2008, 2011, 2012, 2015-2018 Albert Astals Cid <aacid@kde.org>
  * Copyright (C) 2011 Carlos Garcia Campos <carlosgc@gnome.org>
  * Copyright (C) 2012, Adam Reichold <adamreichold@myopera.com>
  * Copyright (C) 2016, Hanno Meyer-Thurow <h.mth@web.de>
  * Copyright (C) 2017, Hans-Ulrich Jüttner <huj@froreich-bioscientia.de>
+ * Copyright (C) 2018, Andre Heinecke <aheinecke@intevation.de>
+ * Copyright (C) 2018 Klarälvdalens Datakonsult AB, a KDAB Group company, <info@kdab.com>. Work sponsored by the LiMux project of the city of Munich
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -112,7 +114,7 @@ int FormField::id() const
 QString FormField::name() const
 {
   QString name;
-  if (GooString *goo = m_formData->fm->getPartialName())
+  if (const GooString *goo = m_formData->fm->getPartialName())
   {
     name = QString::fromLatin1(goo->getCString());
   }
@@ -139,7 +141,7 @@ QString FormField::fullyQualifiedName() const
 QString FormField::uiName() const
 {
   QString name;
-  if (GooString *goo = m_formData->fm->getAlternateUiName())
+  if (const GooString *goo = m_formData->fm->getAlternateUiName())
   {
     name = QString::fromLatin1(goo->getCString());
   }
@@ -151,9 +153,25 @@ bool FormField::isReadOnly() const
   return m_formData->fm->isReadOnly();
 }
 
+void FormField::setReadOnly(bool value)
+{
+  m_formData->fm->setReadOnly(value);
+}
+
 bool FormField::isVisible() const
 {
   return !(m_formData->fm->getWidgetAnnotation()->getFlags() & Annot::flagHidden);
+}
+
+void FormField::setVisible(bool value)
+{
+  Guint flags = m_formData->fm->getWidgetAnnotation()->getFlags();
+  if (value) {
+    flags &= ~Annot::flagHidden;
+  } else {
+    flags |= Annot::flagHidden;
+  }
+  m_formData->fm->getWidgetAnnotation()->setFlags(flags);
 }
 
 Link* FormField::activationAction() const
@@ -180,6 +198,24 @@ Link *FormField::additionalAction(AdditionalActionType type) const
 
   Link* action = nullptr;
   if (::LinkAction *act = m_formData->fm->getAdditionalAction(actionType))
+  {
+    action = PageData::convertLinkActionToLink(act, m_formData->doc, QRectF());
+  }
+  return action;
+}
+
+Link *FormField::additionalAction(Annotation::AdditionalActionType type) const
+{
+  ::AnnotWidget *w = m_formData->fm->getWidgetAnnotation();
+  if (!w)
+  {
+    return nullptr;
+  }
+
+  const Annot::AdditionalActionsType actionType = toPopplerAdditionalActionType(type);
+
+  Link* action = nullptr;
+  if (::LinkAction *act = w->getAdditionalAction(actionType))
   {
     action = PageData::convertLinkActionToLink(act, m_formData->doc, QRectF());
   }
@@ -305,7 +341,7 @@ FormFieldText::TextType FormFieldText::textType() const
 
 QString FormFieldText::text() const
 {
-  GooString *goo = static_cast<FormWidgetText*>(m_formData->fm)->getContent();
+  const GooString *goo = static_cast<FormWidgetText*>(m_formData->fm)->getContent();
   return UnicodeParsedString(goo);
 }
 

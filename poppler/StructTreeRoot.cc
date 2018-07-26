@@ -8,7 +8,7 @@
 // Copyright 2014 Fabio D'Urso <fabiodurso@hotmail.it>
 // Copyright 2017 Jan-Erik S <janerik234678@gmail.com>
 // Copyright 2017, 2018 Albert Astals Cid <aacid@kde.org>
-// Copyright 2017 Adrian Johnson <ajohnson@redneon.com>
+// Copyright 2017, 2018 Adrian Johnson <ajohnson@redneon.com>
 //
 //========================================================================
 
@@ -147,7 +147,6 @@ void StructTreeRoot::parseNumberTreeNode(Dict *node)
 	Object value = nums.arrayGet(i + 1);
 	if (value.isArray()) {
 	  vec.resize(value.arrayGetLength());
-	  memset(vec.data(), 0, vec.size()*sizeof(Parent*));
 	  for (int j = 0; j < value.arrayGetLength(); j++) {
 	    Object itemvalue = value.arrayGetNF(j);
 	    if (itemvalue.isRef()) {

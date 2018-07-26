@@ -1,9 +1,10 @@
 /* poppler-link.cc: qt interface to poppler
- * Copyright (C) 2006-2007, 2013, 2016, 2017, Albert Astals Cid
+ * Copyright (C) 2006-2007, 2013, 2016-2018, Albert Astals Cid
  * Copyright (C) 2007-2008, Pino Toscano <pino@kde.org>
  * Copyright (C) 2010 Hib Eris <hib@hiberis.nl>
  * Copyright (C) 2012, Tobias Koenig <tokoe@kdab.com>
  * Copyright (C) 2012, Guillermo A. Amaral B. <gamaral@kde.org>
+ * Copyright (C) 2018 Intevation GmbH <intevation@intevation.de>
  * Adapting code from
  *   Copyright (C) 2004 by Enrico Ros <eros.kde@email.it>
  *
@@ -232,7 +233,7 @@ class LinkMoviePrivate : public LinkPrivate
 		: d( new LinkDestinationPrivate )
 	{
 		bool deleteDest = false;
-		LinkDest *ld = data.ld;
+		const LinkDest *ld = data.ld;
 		
 		if ( data.namedDest && !ld && !data.externalDest )
 		{
@@ -426,7 +427,12 @@ class LinkMoviePrivate : public LinkPrivate
 		Q_D( const Link );
 		return d->linkArea;
 	}
-	
+
+	QVector< Link * > Link::nextLinks() const
+	{
+		return d_ptr->nextLinks;
+	}
+
 	// LinkGoto
 	LinkGoto::LinkGoto( const QRectF &linkArea, QString extFileName, const LinkDestination & destination )
 		: Link( *new LinkGotoPrivate( linkArea, destination ) )
@@ -703,5 +709,32 @@ class LinkMoviePrivate : public LinkPrivate
 	Link::LinkType LinkOCGState::linkType() const
 	{
 		return OCGState;
+	}
+
+	// LinkHide
+	LinkHide::LinkHide( LinkHidePrivate *lhidep )
+		: Link( *lhidep )
+	{
+	}
+
+	LinkHide::~LinkHide()
+	{
+	}
+
+	Link::LinkType LinkHide::linkType() const
+	{
+		return Hide;
+	}
+
+	QVector < QString > LinkHide::targets() const
+	{
+		Q_D( const LinkHide );
+		return QVector< QString >() << d->targetName;
+	}
+
+	bool LinkHide::isShowAction() const
+	{
+		Q_D( const LinkHide );
+		return d->isShow;
 	}
 }

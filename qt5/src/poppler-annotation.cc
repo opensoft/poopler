@@ -5,6 +5,8 @@
  * Copyright (C) 2012-2014 Fabio D'Urso <fabiodurso@hotmail.it>
  * Copyright (C) 2012, 2015, Tobias Koenig <tobias.koenig@kdab.com>
  * Copyright (C) 2018 Adam Reichold <adam.reichold@t-online.de>
+ * Copyright (C) 2018 Klarälvdalens Datakonsult AB, a KDAB Group company, <info@kdab.com>. Work sponsored by the LiMux project of the city of Munich
+ * Copyright (C) 2018 Intevation GmbH <intevation@intevation.de>
  * Adapting code from
  *   Copyright (C) 2004 by Enrico Ros <eros.kde@email.it>
  *
@@ -535,7 +537,7 @@ QList<Annotation*> AnnotationPrivate::findAnnotations(::Page *pdfPage, DocumentD
                 MovieObject *movie = new MovieObject( movieann );
                 m->setMovie( movie );
                 // -> movieTitle
-                GooString * movietitle = movieann->getTitle();
+                const GooString * movietitle = movieann->getTitle();
                 if ( movietitle )
                     m->setMovieTitle( QString::fromLatin1( movietitle->getCString() ) );
                 break;
@@ -556,7 +558,7 @@ QList<Annotation*> AnnotationPrivate::findAnnotations(::Page *pdfPage, DocumentD
                 s->setAction( static_cast<Poppler::LinkRendition *>(popplerLink) );
 
                 // -> screenTitle
-                GooString * screentitle = screenann->getTitle();
+                const GooString * screentitle = screenann->getTitle();
                 if ( screentitle )
                     s->setScreenTitle( UnicodeParsedString( screentitle ) );
                 break;
@@ -776,20 +778,7 @@ Link* AnnotationPrivate::additionalAction( Annotation::AdditionalActionType type
     if ( pdfAnnot->getType() != Annot::typeScreen && pdfAnnot->getType() != Annot::typeWidget )
         return nullptr;
 
-    Annot::AdditionalActionsType actionType = Annot::actionCursorEntering;
-    switch ( type )
-    {
-        case Annotation::CursorEnteringAction: actionType = Annot::actionCursorEntering; break;
-        case Annotation::CursorLeavingAction: actionType = Annot::actionCursorLeaving; break;
-        case Annotation::MousePressedAction: actionType = Annot::actionMousePressed; break;
-        case Annotation::MouseReleasedAction: actionType = Annot::actionMouseReleased; break;
-        case Annotation::FocusInAction: actionType = Annot::actionFocusIn; break;
-        case Annotation::FocusOutAction: actionType = Annot::actionFocusOut; break;
-        case Annotation::PageOpeningAction: actionType = Annot::actionPageOpening; break;
-        case Annotation::PageClosingAction: actionType = Annot::actionPageClosing; break;
-        case Annotation::PageVisibleAction: actionType = Annot::actionPageVisible; break;
-        case Annotation::PageInvisibleAction: actionType = Annot::actionPageInvisible; break;
-    }
+    const Annot::AdditionalActionsType actionType = toPopplerAdditionalActionType(type);
 
     ::LinkAction *linkAction = nullptr;
     if ( pdfAnnot->getType() == Annot::typeScreen )
@@ -3943,6 +3932,11 @@ void LinkAnnotation::store( QDomNode & node, QDomDocument & document ) const
             case Poppler::Link::OCGState:
             {
                 hyperlinkElement.setAttribute( QStringLiteral("type"), QStringLiteral("OCGState") );
+                break;
+            }
+            case Poppler::Link::Hide:
+            {
+                hyperlinkElement.setAttribute( QStringLiteral("type"), QStringLiteral("Hide") );
                 break;
             }
             case Poppler::Link::None:

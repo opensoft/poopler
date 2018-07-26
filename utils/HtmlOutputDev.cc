@@ -40,6 +40,7 @@
 // Copyright (C) 2014 Fabio D'Urso <fabiodurso@hotmail.it>
 // Copyright (C) 2016 Vincent Le Garrec <legarrec.vincent@gmail.com>
 // Copyright (C) 2017 Caolán McNamara <caolanm@redhat.com>
+// Copyright (C) 2018 Klarälvdalens Datakonsult AB, a KDAB Group company, <info@kdab.com>. Work sponsored by the LiMux project of the city of Munich
 //
 // To see a description of the changes please see the Changelog file that
 // came with your tarball or type make ChangeLog if you are building from git
@@ -338,7 +339,7 @@ void HtmlPage::updateFont(GfxState *state) {
   }
 }
 
-void HtmlPage::beginString(GfxState *state, GooString *s) {
+void HtmlPage::beginString(GfxState *state, const GooString *s) {
   curStr = new HtmlString(state, fontSize, fonts);
 }
 
@@ -1305,7 +1306,7 @@ void HtmlOutputDev::updateFont(GfxState *state) {
   pages->updateFont(state);
 }
 
-void HtmlOutputDev::beginString(GfxState *state, GooString *s) {
+void HtmlOutputDev::beginString(GfxState *state, const GooString *s) {
   pages->beginString(state, s);
 }
 
@@ -1697,7 +1698,6 @@ GBool HtmlOutputDev::dumpDocOutline(PDFDoc* doc)
 #else
 	FILE * output = nullptr;
 	GBool bClose = gFalse;
-	Catalog *catalog = doc->getCatalog();
 
 	if (!ok)
                 return gFalse;
@@ -1706,7 +1706,7 @@ GBool HtmlOutputDev::dumpDocOutline(PDFDoc* doc)
 	if (!outline)
 		return gFalse;
 
-	GooList *outlines = outline->getItems();
+	const GooList *outlines = outline->getItems();
 	if (!outlines)
 		return gFalse;
   
@@ -1747,7 +1747,7 @@ GBool HtmlOutputDev::dumpDocOutline(PDFDoc* doc)
  
 	if (!xml)
 	{
-		GBool done = newHtmlOutlineLevel(output, outlines, catalog);
+		GBool done = newHtmlOutlineLevel(output, outlines);
 		if (done && !complexMode)
 			fputs("<hr/>\n", output);
 	
@@ -1758,13 +1758,13 @@ GBool HtmlOutputDev::dumpDocOutline(PDFDoc* doc)
 		}
 	}
 	else
-		newXmlOutlineLevel(output, outlines, catalog);
+		newXmlOutlineLevel(output, outlines);
 
 	return gTrue;
 #endif
 }
 
-GBool HtmlOutputDev::newHtmlOutlineLevel(FILE *output, GooList *outlines, Catalog* catalog, int level)
+GBool HtmlOutputDev::newHtmlOutlineLevel(FILE *output, const GooList *outlines, int level)
 {
 #ifdef DISABLE_OUTLINE
 	return gFalse;
@@ -1825,7 +1825,7 @@ GBool HtmlOutputDev::newHtmlOutlineLevel(FILE *output, GooList *outlines, Catalo
 		if (item->hasKids() && item->getKids())
 		{
 			fputs("\n",output);
-			newHtmlOutlineLevel(output, item->getKids(), catalog, level+1);
+			newHtmlOutlineLevel(output, item->getKids(), level+1);
 		}
 		item->close();
 		fputs("</li>\n",output);
@@ -1836,7 +1836,7 @@ GBool HtmlOutputDev::newHtmlOutlineLevel(FILE *output, GooList *outlines, Catalo
 #endif
 }
 
-void HtmlOutputDev::newXmlOutlineLevel(FILE *output, GooList *outlines, Catalog* catalog)
+void HtmlOutputDev::newXmlOutlineLevel(FILE *output, const GooList *outlines)
 {
 #ifndef DISABLE_OUTLINE
     fputs("<outline>\n", output);
@@ -1861,7 +1861,7 @@ void HtmlOutputDev::newXmlOutlineLevel(FILE *output, GooList *outlines, Catalog*
         item->open();
         if (item->hasKids() && item->getKids())
         {
-            newXmlOutlineLevel(output, item->getKids(), catalog);
+            newXmlOutlineLevel(output, item->getKids());
         }
         item->close();
     }    
@@ -1873,15 +1873,15 @@ void HtmlOutputDev::newXmlOutlineLevel(FILE *output, GooList *outlines, Catalog*
 #ifndef DISABLE_OUTLINE
 int HtmlOutputDev::getOutlinePageNum(OutlineItem *item)
 {
-    LinkAction *action   = item->getAction();
-    LinkGoTo   *link     = nullptr;
+    const LinkAction *action   = item->getAction();
+    const LinkGoTo   *link     = nullptr;
     LinkDest   *linkdest = nullptr;
     int         pagenum  = -1;
 
     if (!action || action->getKind() != actionGoTo)
         return pagenum;
 
-    link = dynamic_cast<LinkGoTo*>(action);
+    link = dynamic_cast<const LinkGoTo*>(action);
 
     if (!link || !link->isOk())
         return pagenum;

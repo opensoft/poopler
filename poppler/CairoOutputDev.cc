@@ -18,7 +18,7 @@
 // Copyright (C) 2005, 2006 Kristian Høgsberg <krh@redhat.com>
 // Copyright (C) 2005, 2009, 2012, 2017, 2018 Albert Astals Cid <aacid@kde.org>
 // Copyright (C) 2005 Nickolay V. Shmyrev <nshmyrev@yandex.ru>
-// Copyright (C) 2006-2011, 2013, 2014, 2017 Carlos Garcia Campos <carlosgc@gnome.org>
+// Copyright (C) 2006-2011, 2013, 2014, 2017, 2018 Carlos Garcia Campos <carlosgc@gnome.org>
 // Copyright (C) 2008 Carl Worth <cworth@cworth.org>
 // Copyright (C) 2008-2017 Adrian Johnson <ajohnson@redneon.com>
 // Copyright (C) 2008 Michael Vrable <mvrable@cs.ucsd.edu>
@@ -29,6 +29,7 @@
 // Copyright (C) 2012 Patrick Pfeifer <p2000@mailinator.com>
 // Copyright (C) 2012, 2015, 2016 Jason Crain <jason@aquaticape.us>
 // Copyright (C) 2015 Suzuki Toshiya <mpsuzuki@hiroshima-u.ac.jp>
+// Copyright (C) 2018 Klarälvdalens Datakonsult AB, a KDAB Group company, <info@kdab.com>. Work sponsored by the LiMux project of the city of Munich
 //
 // To see a description of the changes please see the Changelog file that
 // came with your tarball or type make ChangeLog if you are building from git
@@ -959,7 +960,7 @@ GBool CairoOutputDev::tilingPatternFill(GfxState *state, Gfx *gfxA, Catalog *cat
   adjusted_stroke_width_tmp = adjusted_stroke_width;
   maskTmp = mask;
   mask = nullptr;
-  gfx = new Gfx(doc, this, resDict, &box, nullptr, nullptr, nullptr, gfxA->getXRef());
+  gfx = new Gfx(doc, this, resDict, &box, nullptr, nullptr, nullptr, gfxA);
   if (paintType == 2)
     inUncoloredPattern = gTrue;
   gfx->display(str);
@@ -1379,7 +1380,7 @@ void CairoOutputDev::fillToStrokePathClip(GfxState *state) {
   cairo_restore (cairo);
 }
 
-void CairoOutputDev::beginString(GfxState *state, GooString *s)
+void CairoOutputDev::beginString(GfxState *state, const GooString *s)
 {
   int len = s->getLength();
 
@@ -1588,7 +1589,7 @@ void CairoOutputDev::endTextObject(GfxState *state) {
   }
 }
 
-void CairoOutputDev::beginActualText(GfxState *state, GooString *text)
+void CairoOutputDev::beginActualText(GfxState *state, const GooString *text)
 {
   if (this->text)
     actualText->begin(state, text);

@@ -1,6 +1,7 @@
 include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}
   ${CMAKE_CURRENT_BINARY_DIR}
+  ${ICONV_INCLUDE_DIR}
 )
 
 configure_file(poppler-version.h.in ${CMAKE_CURRENT_BINARY_DIR}/poppler-version.h @ONLY)
@@ -50,7 +51,7 @@ set(poppler_cpp_SRCS
 )
 
 add_library(poppler-cpp ${poppler_cpp_SRCS} ${poppler_cpp_HEADERS} ${poppler_cpp_Private_HEADERS})
-set_target_properties(poppler-cpp PROPERTIES VERSION 0.3.0 SOVERSION 0)
+set_target_properties(poppler-cpp PROPERTIES VERSION 0.5.0 SOVERSION 0)
 if(MINGW)
     get_target_property(POPPLER_CPP_SOVERSION poppler-cpp SOVERSION)
     set_target_properties(poppler-cpp PROPERTIES SUFFIX "-${POPPLER_CPP_SOVERSION}${CMAKE_SHARED_LIBRARY_SUFFIX}")

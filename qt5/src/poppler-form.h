@@ -5,6 +5,7 @@
  * Copyright (C) 2016, Hanno Meyer-Thurow <h.mth@web.de>
  * Copyright (C) 2017, Hans-Ulrich Jüttner <huj@froreich-bioscientia.de>
  * Copyright (C) 2017, Tobias C. Berner <tcberner@freebsd.org>
+ * Copyright (C) 2018, Andre Heinecke <aheinecke@intevation.de>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,6 +32,7 @@
 #include <QtCore/QStringList>
 #include <QtCore/QSharedPointer>
 #include "poppler-export.h"
+#include "poppler-annotation.h"
 
 class Page;
 class FormWidget;
@@ -110,9 +112,21 @@ namespace Poppler {
 	bool isReadOnly() const;
 
 	/**
+	  Set whether this form field is read-only.
+	  \since 0.64
+	 */
+	void setReadOnly(bool value);
+
+	/**
 	  Whether this form field is visible.
 	 */
 	bool isVisible() const;
+
+	/**
+	  Set whether this form field is visible.
+	  \since 0.64
+	 */
+	void setVisible(bool value);
 
 	/**
 	  The activation action of this form field.
@@ -139,6 +153,13 @@ namespace Poppler {
 	  * \since 0.53
 	 */
 	Link* additionalAction(AdditionalActionType type) const;
+
+	/**
+	  * Returns a given widget annotation additional action
+	  *
+	  * \since 0.65
+	 */
+	Link* additionalAction(Annotation::AdditionalActionType type) const;
 
     protected:
 	/// \cond PRIVATE

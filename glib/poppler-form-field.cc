@@ -138,6 +138,9 @@ poppler_form_field_get_id (PopplerFormField *field)
  *
  * Gets the font size of @field
  *
+ * WARNING: This function always returns 0. Contact the poppler
+ * mailing list if you're interested in implementing it properly
+ *
  * Return value: the font size of @field
  **/
 gdouble
@@ -145,7 +148,7 @@ poppler_form_field_get_font_size (PopplerFormField *field)
 {
   g_return_val_if_fail (POPPLER_IS_FORM_FIELD (field), 0);
   
-  return field->widget->getFontSize ();
+  return 0;
 }
 
 /**
@@ -267,7 +270,7 @@ poppler_form_field_button_set_state (PopplerFormField *field,
 gchar*
 poppler_form_field_get_partial_name (PopplerFormField *field)
 {
-  GooString *tmp;
+  const GooString *tmp;
 
   g_return_val_if_fail (POPPLER_IS_FORM_FIELD (field), NULL);
 
@@ -290,7 +293,7 @@ poppler_form_field_get_partial_name (PopplerFormField *field)
 gchar*
 poppler_form_field_get_mapping_name (PopplerFormField *field)
 {
-  GooString *tmp;
+  const GooString *tmp;
 
   g_return_val_if_fail (POPPLER_IS_FORM_FIELD (field), NULL);
 
@@ -360,7 +363,7 @@ gchar *
 poppler_form_field_text_get_text (PopplerFormField *field)
 {
   FormWidgetText *text_field;
-  GooString      *tmp;
+  const GooString *tmp;
 
   g_return_val_if_fail (field->widget->getType () == formText, NULL);
 
@@ -571,7 +574,7 @@ gchar *
 poppler_form_field_choice_get_item (PopplerFormField *field,
 				    gint              index)
 {
-  GooString *tmp;
+  const GooString *tmp;
   
   g_return_val_if_fail (field->widget->getType () == formChoice, NULL);
   g_return_val_if_fail (index >= 0 && index < poppler_form_field_choice_get_n_items (field), NULL);
@@ -682,7 +685,7 @@ poppler_form_field_choice_set_text (PopplerFormField *field,
 gchar *
 poppler_form_field_choice_get_text (PopplerFormField *field)
 {
-  GooString *tmp;
+  const GooString *tmp;
   
   g_return_val_if_fail (field->widget->getType () == formChoice, NULL);
 

@@ -11,7 +11,7 @@
 // All changes made under the Poppler project to this file are licensed
 // under GPL version 2 or later
 //
-// Copyright (C) 2005, 2007-2011, 2014 Albert Astals Cid <aacid@kde.org>
+// Copyright (C) 2005, 2007-2011, 2014, 2018 Albert Astals Cid <aacid@kde.org>
 // Copyright (C) 2006 Kristian Høgsberg <krh@bitplanet.net>
 // Copyright (C) 2009 Petr Gajdos <pgajdos@novell.com>
 // Copyright (C) 2010 Suzuki Toshiya <mpsuzuki@hiroshima-u.ac.jp>
@@ -42,6 +42,8 @@
 #include "SplashFTFontFile.h"
 #include "SplashFTFont.h"
 
+#include "goo/GooLikely.h"
+
 //------------------------------------------------------------------------
 
 static int glyphPathMoveTo(const FT_Vector *pt, void *path);
@@ -58,8 +60,10 @@ static int glyphPathCubicTo(const FT_Vector *ctrl1, const FT_Vector *ctrl2,
 SplashFTFont::SplashFTFont(SplashFTFontFile *fontFileA, SplashCoord *matA,
 			   SplashCoord *textMatA):
   SplashFont(fontFileA, matA, textMatA, fontFileA->engine->aa), 
+  textScale(0),
   enableFreeTypeHinting(fontFileA->engine->enableFreeTypeHinting),
-  enableSlightHinting(fontFileA->engine->enableSlightHinting)
+  enableSlightHinting(fontFileA->engine->enableSlightHinting),
+  isOk(false)
 {
   FT_Face face;
   int div;
@@ -83,6 +87,10 @@ SplashFTFont::SplashFTFont(SplashFTFontFile *fontFileA, SplashCoord *matA,
   // if the textMat values are too small, FreeType's fixed point
   // arithmetic doesn't work so well
   textScale = splashDist(0, 0, textMat[2], textMat[3]) / size;
+
+  if (unlikely(textScale == 0 || face->units_per_EM == 0)) {
+    return;
+  }
 
   div = face->bbox.xMax > 20000 ? 65536 : 1;
 
@@ -222,6 +230,8 @@ SplashFTFont::SplashFTFont(SplashFTFontFile *fontFileA, SplashCoord *matA,
   textMatrix.xy = (FT_Fixed)((textMat[2] / (textScale * size)) * 65536);
   textMatrix.yy = (FT_Fixed)((textMat[3] / (textScale * size)) * 65536);
 #endif
+
+  isOk = true;
 }
 
 SplashFTFont::~SplashFTFont() {
@@ -270,6 +280,10 @@ GBool SplashFTFont::makeGlyph(int c, int xFrac, int yFrac,
   int rowSize;
   Guchar *p, *q;
   int i;
+
+  if (unlikely(!isOk)) {
+    return gFalse;
+  }
 
   ff = (SplashFTFontFile *)fontFile;
 
@@ -404,6 +418,10 @@ SplashPath *SplashFTFont::getGlyphPath(int c) {
   FT_GlyphSlot slot;
   FT_UInt gid;
   FT_Glyph glyph;
+
+  if (unlikely(textScale == 0)) {
+    return nullptr;
+  }
 
   ff = (SplashFTFontFile *)fontFile;
   ff->face->size = sizeObj;

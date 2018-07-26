@@ -1,7 +1,7 @@
 /* poppler-document.cc: qt interface to poppler
  * Copyright (C) 2005, Net Integration Technologies, Inc.
  * Copyright (C) 2005, 2008, Brad Hards <bradh@frogmouth.net>
- * Copyright (C) 2005-2010, 2012, 2013, 2015, 2017, Albert Astals Cid <aacid@kde.org>
+ * Copyright (C) 2005-2010, 2012, 2013, 2015, 2017, 2018, Albert Astals Cid <aacid@kde.org>
  * Copyright (C) 2006-2010, Pino Toscano <pino@kde.org>
  * Copyright (C) 2010, 2011 Hib Eris <hib@hiberis.nl>
  * Copyright (C) 2012 Koji Otani <sho@bbr.jp>
@@ -12,6 +12,7 @@
  * Copyright (C) 2016 Jakub Alba <jakubalba@gmail.com>
  * Copyright (C) 2017 Adrian Johnson <ajohnson@redneon.com>
  * Copyright (C) 2017 Suzuki Toshiya <mpsuzuki@hiroshima-u.ac.jp>
+ * Copyright (C) 2018 Klarälvdalens Datakonsult AB, a KDAB Group company, <info@kdab.com>. Work sponsored by the LiMux project of the city of Munich
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -443,7 +444,7 @@ namespace Poppler {
 
 	QScopedPointer<GooString> goo(m_doc->doc->getDocInfoStringEntry(type.toLatin1().constData()));
 	QString str = UnicodeParsedString(goo.data());
-	return Poppler::convertDate(str.toLatin1().data());
+	return Poppler::convertDate(str.toLatin1().constData());
     }
 
     bool Document::setDate( const QString & key, const QDateTime & val )
@@ -464,7 +465,7 @@ namespace Poppler {
 
 	QScopedPointer<GooString> goo(m_doc->doc->getDocInfoCreatDate());
 	QString str = UnicodeParsedString(goo.data());
-	return Poppler::convertDate(str.toLatin1().data());
+	return Poppler::convertDate(str.toLatin1().constData());
     }
 
     bool Document::setCreationDate( const QDateTime & val )
@@ -485,7 +486,7 @@ namespace Poppler {
 
 	QScopedPointer<GooString> goo(m_doc->doc->getDocInfoModDate());
 	QString str = UnicodeParsedString(goo.data());
-	return Poppler::convertDate(str.toLatin1().data());
+	return Poppler::convertDate(str.toLatin1().constData());
     }
 
     bool Document::setModificationDate( const QDateTime & val )
@@ -583,7 +584,7 @@ namespace Poppler {
         if ( !outline )
             return nullptr;
 
-        GooList * items = outline->getItems();
+        const GooList * items = outline->getItems();
         if ( !items || items->getLength() < 1 )
             return nullptr;
 
@@ -793,7 +794,7 @@ namespace Poppler {
         return result;
     }
 
-    QDateTime convertDate( char *dateString )
+    QDateTime convertDate( const char *dateString )
     {
         int year, mon, day, hour, min, sec, tzHours, tzMins;
         char tz;
@@ -823,6 +824,12 @@ namespace Poppler {
         }
         return QDateTime();
     }
+
+    QDateTime convertDate( char *dateString )
+    {
+        return convertDate( (const char *) dateString );
+    }
+
 
     bool isCmsAvailable()
     {

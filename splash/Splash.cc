@@ -11,7 +11,7 @@
 // All changes made under the Poppler project to this file are licensed
 // under GPL version 2 or later
 //
-// Copyright (C) 2005-2017 Albert Astals Cid <aacid@kde.org>
+// Copyright (C) 2005-2018 Albert Astals Cid <aacid@kde.org>
 // Copyright (C) 2005 Marco Pesenti Gritti <mpg@redhat.com>
 // Copyright (C) 2010-2016 Thomas Freitag <Thomas.Freitag@alfa.de>
 // Copyright (C) 2010 Christian Feuersänger <cfeuersaenger@googlemail.com>
@@ -19,6 +19,7 @@
 // Copyright (C) 2012 Markus Trippelsdorf <markus@trippelsdorf.de>
 // Copyright (C) 2012, 2017 Adrian Johnson <ajohnson@redneon.com>
 // Copyright (C) 2012 Matthias Kramm <kramm@quiss.org>
+// Copyright (C) 2018 Stefan Brüns <stefan.bruens@rwth-aachen.de>
 //
 // To see a description of the changes please see the Changelog file that
 // came with your tarball or type make ChangeLog if you are building from git
@@ -1077,25 +1078,35 @@ void Splash::pipeRunAARGB8(SplashPipe *pipe) {
   SplashColor cDest;
   Guchar cResult0, cResult1, cResult2;
 
-  //----- read destination pixel
-  cDest[0] = pipe->destColorPtr[0];
-  cDest[1] = pipe->destColorPtr[1];
-  cDest[2] = pipe->destColorPtr[2];
+  //----- read destination alpha
   aDest = *pipe->destAlphaPtr;
 
   //----- source alpha
   aSrc = div255(pipe->aInput * pipe->shape);
 
-  //----- result alpha and non-isolated group element correction
-  aResult = aSrc + aDest - div255(aSrc * aDest);
-  alpha2 = aResult;
-
   //----- result color
-  if (alpha2 == 0) {
+  if (aSrc == 255) {
+    cResult0 = state->rgbTransferR[pipe->cSrc[0]];
+    cResult1 = state->rgbTransferG[pipe->cSrc[1]];
+    cResult2 = state->rgbTransferB[pipe->cSrc[2]];
+    aResult = 255;
+
+  } else if (aSrc == 0 && aDest == 0) {
     cResult0 = 0;
     cResult1 = 0;
     cResult2 = 0;
+    aResult = 0;
+
   } else {
+    //----- read destination pixel
+    cDest[0] = pipe->destColorPtr[0];
+    cDest[1] = pipe->destColorPtr[1];
+    cDest[2] = pipe->destColorPtr[2];
+
+    //----- result alpha and non-isolated group element correction
+    aResult = aSrc + aDest - div255(aSrc * aDest);
+    alpha2 = aResult;
+
     cResult0 = state->rgbTransferR[(Guchar)(((alpha2 - aSrc) * cDest[0] +
 					     aSrc * pipe->cSrc[0]) / alpha2)];
     cResult1 = state->rgbTransferG[(Guchar)(((alpha2 - aSrc) * cDest[1] +
@@ -1123,25 +1134,35 @@ void Splash::pipeRunAAXBGR8(SplashPipe *pipe) {
   SplashColor cDest;
   Guchar cResult0, cResult1, cResult2;
 
-  //----- read destination pixel
-  cDest[0] = pipe->destColorPtr[2];
-  cDest[1] = pipe->destColorPtr[1];
-  cDest[2] = pipe->destColorPtr[0];
+  //----- read destination alpha
   aDest = *pipe->destAlphaPtr;
 
   //----- source alpha
   aSrc = div255(pipe->aInput * pipe->shape);
 
-  //----- result alpha and non-isolated group element correction
-  aResult = aSrc + aDest - div255(aSrc * aDest);
-  alpha2 = aResult;
-
   //----- result color
-  if (alpha2 == 0) {
+  if (aSrc == 255) {
+    cResult0 = state->rgbTransferR[pipe->cSrc[0]];
+    cResult1 = state->rgbTransferG[pipe->cSrc[1]];
+    cResult2 = state->rgbTransferB[pipe->cSrc[2]];
+    aResult = 255;
+
+  } else if (aSrc == 0 && aDest == 0) {
     cResult0 = 0;
     cResult1 = 0;
     cResult2 = 0;
+    aResult = 0;
+
   } else {
+    //----- read destination color
+    cDest[0] = pipe->destColorPtr[2];
+    cDest[1] = pipe->destColorPtr[1];
+    cDest[2] = pipe->destColorPtr[0];
+
+    //----- result alpha and non-isolated group element correction
+    aResult = aSrc + aDest - div255(aSrc * aDest);
+    alpha2 = aResult;
+
     cResult0 = state->rgbTransferR[(Guchar)(((alpha2 - aSrc) * cDest[0] +
 					     aSrc * pipe->cSrc[0]) / alpha2)];
     cResult1 = state->rgbTransferG[(Guchar)(((alpha2 - aSrc) * cDest[1] +
@@ -1170,25 +1191,35 @@ void Splash::pipeRunAABGR8(SplashPipe *pipe) {
   SplashColor cDest;
   Guchar cResult0, cResult1, cResult2;
 
-  //----- read destination pixel
-  cDest[0] = pipe->destColorPtr[2];
-  cDest[1] = pipe->destColorPtr[1];
-  cDest[2] = pipe->destColorPtr[0];
+  //----- read destination alpha
   aDest = *pipe->destAlphaPtr;
 
   //----- source alpha
   aSrc = div255(pipe->aInput * pipe->shape);
 
-  //----- result alpha and non-isolated group element correction
-  aResult = aSrc + aDest - div255(aSrc * aDest);
-  alpha2 = aResult;
-
   //----- result color
-  if (alpha2 == 0) {
+  if (aSrc == 255) {
+    cResult0 = state->rgbTransferR[pipe->cSrc[0]];
+    cResult1 = state->rgbTransferG[pipe->cSrc[1]];
+    cResult2 = state->rgbTransferB[pipe->cSrc[2]];
+    aResult = 255;
+
+  } else if (aSrc == 0 && aDest == 0) {
     cResult0 = 0;
     cResult1 = 0;
     cResult2 = 0;
+    aResult = 0;
+
   } else {
+    //----- read destination color
+    cDest[0] = pipe->destColorPtr[2];
+    cDest[1] = pipe->destColorPtr[1];
+    cDest[2] = pipe->destColorPtr[0];
+
+    //----- result alpha and non-isolated group element correction
+    aResult = aSrc + aDest - div255(aSrc * aDest);
+    alpha2 = aResult;
+
     cResult0 = state->rgbTransferR[(Guchar)(((alpha2 - aSrc) * cDest[0] +
 					     aSrc * pipe->cSrc[0]) / alpha2)];
     cResult1 = state->rgbTransferG[(Guchar)(((alpha2 - aSrc) * cDest[1] +
@@ -2462,7 +2493,7 @@ inline void Splash::getBBoxFP(SplashPath *path, SplashCoord *xMinA, SplashCoord 
 SplashError Splash::fillWithPattern(SplashPath *path, GBool eo,
 				    SplashPattern *pattern,
 				    SplashCoord alpha) {
-  SplashPipe pipe;
+  SplashPipe pipe = {};
   SplashXPath *xPath;
   SplashXPathScanner *scanner;
   int xMinI, yMinI, xMaxI, yMaxI, x0, x1, y;
@@ -2840,7 +2871,7 @@ void Splash::fillGlyph2(int x0, int y0, SplashGlyphBitmap *glyph, GBool noClip) 
       for (yy = 0, y1 = yStart; yy < yyLimit; ++yy, ++y1) {
         pipeSetXY(&pipe, xStart, y1);
         for (xx = 0, x1 = xStart; xx < xxLimit; xx += 8) {
-          alpha0 = (xShift > 0 ? (p[xx / 8] << xShift) | (p[xx / 8 + 1] >> (8 - xShift)) : p[xx / 8]);
+          alpha0 = (xShift > 0 && xx < xxLimit - 8 ? (p[xx / 8] << xShift) | (p[xx / 8 + 1] >> (8 - xShift)) : p[xx / 8]);
           for (xx1 = 0; xx1 < 8 && xx + xx1 < xxLimit; ++xx1, ++x1) {
             if (alpha0 & 0x80) {
               (this->*pipe.run)(&pipe);
@@ -2886,7 +2917,7 @@ void Splash::fillGlyph2(int x0, int y0, SplashGlyphBitmap *glyph, GBool noClip) 
       for (yy = 0, y1 = yStart; yy < yyLimit; ++yy, ++y1) {
         pipeSetXY(&pipe, xStart, y1);
         for (xx = 0, x1 = xStart; xx < xxLimit; xx += 8) {
-          alpha0 = (xShift > 0 ? (p[xx / 8] << xShift) | (p[xx / 8 + 1] >> (8 - xShift)) : p[xx / 8]);
+          alpha0 = (xShift > 0 && xx < xxLimit - 8 ? (p[xx / 8] << xShift) | (p[xx / 8 + 1] >> (8 - xShift)) : p[xx / 8]);
           for (xx1 = 0; xx1 < 8 && xx + xx1 < xxLimit; ++xx1, ++x1) {
             if (state->clip->test(x1, y1)) {
               if (alpha0 & 0x80) {
@@ -3239,15 +3270,19 @@ void Splash::arbitraryTransformMask(SplashImageMaskSource src, void *srcData,
 			 ((SplashCoord)y + 0.5 - mat[5]) * ir11);
 	// xx should always be within bounds, but floating point
 	// inaccuracy can cause problems
-	if (xx < 0) {
+	if (unlikely(xx < 0)) {
 	  xx = 0;
-	} else if (xx >= scaledWidth) {
+	  clipRes2 = splashClipPartial;
+	} else if (unlikely(xx >= scaledWidth)) {
 	  xx = scaledWidth - 1;
+	  clipRes2 = splashClipPartial;
 	}
-	if (yy < 0) {
+	if (unlikely(yy < 0)) {
 	  yy = 0;
-	} else if (yy >= scaledHeight) {
+	  clipRes2 = splashClipPartial;
+	} else if (unlikely(yy >= scaledHeight)) {
 	  yy = scaledHeight - 1;
+	  clipRes2 = splashClipPartial;
 	}
 	pipe.shape = scaledMask->data[yy * scaledWidth + xx];
 	if (vectorAntialias && clipRes2 != splashClipAllInside) {
@@ -3550,6 +3585,12 @@ void Splash::scaleMaskYuXu(SplashImageMaskSource src, void *srcData,
     return;
   }
 
+  if (unlikely(srcWidth <= 0 || srcHeight <= 0)) {
+    error(errSyntaxError, -1, "srcWidth <= 0 || srcHeight <= 0 in Splash::scaleMaskYuXu");
+    gfree(dest->takeData());
+    return;
+  }
+
   // Bresenham parameters for y scale
   yp = scaledHeight / srcHeight;
   yq = scaledHeight % srcHeight;
@@ -3831,7 +3872,7 @@ SplashError Splash::arbitraryTransformImage(SplashImageSource src, SplashICCTran
   SplashBitmap *scaledImg;
   SplashClipResult clipRes, clipRes2;
   SplashPipe pipe;
-  SplashColor pixel;
+  SplashColor pixel = {};
   int scaledWidth, scaledHeight, t0, t1, th;
   SplashCoord r00, r01, r10, r11, det, ir00, ir01, ir10, ir11;
   SplashCoord vx[4], vy[4];
@@ -4592,8 +4633,10 @@ void Splash::scaleImageYuXd(SplashImageSource src, void *srcData,
 
   // allocate buffers
   lineBuf = (Guchar *)gmallocn_checkoverflow(srcWidth, nComps);
-  if (unlikely(!lineBuf))
+  if (unlikely(!lineBuf)) {
+    gfree(dest->takeData());
     return;
+  }
   if (srcAlpha) {
     alphaLineBuf = (Guchar *)gmalloc(srcWidth);
   } else {
@@ -5073,7 +5116,7 @@ void Splash::blitImage(SplashBitmap *src, GBool srcAlpha, int xDest, int yDest) 
 void Splash::blitImage(SplashBitmap *src, GBool srcAlpha, int xDest, int yDest,
 		       SplashClipResult clipRes) {
   SplashPipe pipe;
-  SplashColor pixel;
+  SplashColor pixel = {};
   Guchar *ap;
   int w, h, x0, y0, x1, y1, x, y;
 
@@ -5160,7 +5203,7 @@ void Splash::blitImageClipped(SplashBitmap *src, GBool srcAlpha,
 			      int xSrc, int ySrc, int xDest, int yDest,
 			      int w, int h) {
   SplashPipe pipe;
-  SplashColor pixel;
+  SplashColor pixel = {};
   Guchar *ap;
   int x, y;
 

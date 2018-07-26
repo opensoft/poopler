@@ -20,7 +20,7 @@
 // Copyright (C) 2011 Andreas Hartmetz <ahartmetz@gmail.com>
 // Copyright (C) 2013 Thomas Freitag <Thomas.Freitag@alfa.de>
 // Copyright (C) 2013 Mihai Niculescu <q.quark@gmail.com>
-// Copyright (C) 2017 Oliver Sander <oliver.sander@tu-dresden.de>
+// Copyright (C) 2017, 2018 Oliver Sander <oliver.sander@tu-dresden.de>
 //
 // To see a description of the changes please see the Changelog file that
 // came with your tarball or type make ChangeLog if you are building from git
@@ -45,10 +45,13 @@
 #include <QtGui/QPainter>
 
 class GfxState;
+class PDFDoc;
 
 class SplashFontEngine;
 
 class QRawFont;
+
+class ArthurType3Font;
 
 //------------------------------------------------------------------------
 // ArthurOutputDev - Qt 5 QPainter renderer
@@ -83,9 +86,15 @@ public:
   // Does this device use drawChar() or drawString()?
   GBool useDrawChar() override { return gTrue; }
 
+  // Does this device implement shaded fills (aka gradients) natively?
+  // If this returns false, these shaded fills
+  // will be reduced to a series of other drawing operations.
+  // type==2 is 'axial shading'
+  GBool useShadedFills(int type) override { return type == 2; }
+
   // Does this device use beginType3Char/endType3Char?  Otherwise,
   // text in Type 3 fonts will be drawn with drawChar/drawString.
-  GBool interpretType3Chars() override { return gTrue; }
+  GBool interpretType3Chars() override { return gFalse; }
 
   //----- initialization and control
 
@@ -125,6 +134,7 @@ public:
   void stroke(GfxState *state) override;
   void fill(GfxState *state) override;
   void eoFill(GfxState *state) override;
+  GBool axialShadedFill(GfxState * state, GfxAxialShading *shading, double tMin, double tMax) override;
 
   //----- path clipping
   void clip(GfxState *state) override;
@@ -136,10 +146,6 @@ public:
 		double dx, double dy,
 		double originX, double originY,
 		CharCode code, int nBytes, Unicode *u, int uLen) override;
-  GBool beginType3Char(GfxState *state, double x, double y,
-		       double dx, double dy,
-		       CharCode code, Unicode *u, int uLen) override;
-  void endType3Char(GfxState *state) override;
   void endTextObject(GfxState *state) override;
 
   //----- image drawing
@@ -175,8 +181,8 @@ public:
   //----- special access
 
   // Called to indicate that a new PDF document has been loaded.
-  void startDoc(XRef *xrefA);
- 
+  void startDoc(PDFDoc* doc);
+
   GBool isReverseVideo() { return gFalse; }
   
 private:
@@ -204,11 +210,15 @@ private:
 
   GBool m_needFontUpdate;		// set when the font needs to be updated
   SplashFontEngine *m_fontEngine;
+  PDFDoc* m_doc;
   XRef *xref;			// xref table for current document
 
   // The current font in use
   QRawFont* m_rawFont;
   std::stack<QRawFont*> m_rawFontStack;
+
+  ArthurType3Font* m_currentType3Font;
+  std::stack<ArthurType3Font*> m_type3FontStack;
 
   // Identify a font by its 'Ref' and its font size
   struct ArthurFontID
@@ -225,6 +235,7 @@ private:
 
   // Cache all fonts
   std::map<ArthurFontID,std::unique_ptr<QRawFont> > m_rawFontCache;
+  std::map<ArthurFontID,std::unique_ptr<ArthurType3Font> > m_type3FontCache;
 
   // The table that maps character codes to glyph indexes
   int* m_codeToGID;

@@ -11,6 +11,7 @@
  * Copyright (C) 2014 Aki Koskinen <freedesktop@akikoskinen.info>
  * Copyright (C) 2016 Jakub Alba <jakubalba@gmail.com>
  * Copyright (C) 2017 Christoph Cullmann <cullmann@kde.org>
+ * Copyright (C) 2018 Klarälvdalens Datakonsult AB, a KDAB Group company, <info@kdab.com>. Work sponsored by the LiMux project of the city of Munich
  * Inspired on code by
  * Copyright (C) 2004 by Albert Astals Cid <tsdgeos@terra.es>
  * Copyright (C) 2004 by Enrico Ros <eros.kde@email.it>
@@ -57,9 +58,9 @@ class FormWidget;
 namespace Poppler {
 
     /* borrowed from kpdf */
-    QString unicodeToQString(Unicode* u, int len);
+    QString unicodeToQString(const Unicode* u, int len);
 
-    QString UnicodeParsedString(GooString *s1);
+    QString UnicodeParsedString(const GooString *s1);
 
     GooString *QStringToUnicodeGooString(const QString &s);
 
@@ -69,16 +70,18 @@ namespace Poppler {
 
     void qt5ErrorFunction(int pos, char *msg, va_list args);
 
+    Annot::AdditionalActionsType toPopplerAdditionalActionType(Annotation::AdditionalActionType type);
+
     class LinkDestinationData
     {
         public:
-            LinkDestinationData( LinkDest *l, GooString *nd, Poppler::DocumentData *pdfdoc, bool external )
+            LinkDestinationData( const LinkDest *l, const GooString *nd, Poppler::DocumentData *pdfdoc, bool external )
              : ld(l), namedDest(nd), doc(pdfdoc), externalDest(external)
             {
             }
 
-            LinkDest *ld;
-            GooString *namedDest;
+            const LinkDest *ld;
+            const GooString *namedDest;
             Poppler::DocumentData *doc;
             bool externalDest;
     };
@@ -118,7 +121,7 @@ namespace Poppler {
 	DocumentData(const DocumentData &) = delete;
 	DocumentData& operator=(const DocumentData &) = delete;
 	
-	void addTocChildren( QDomDocument * docSyn, QDomNode * parent, GooList * items );
+	void addTocChildren( QDomDocument * docSyn, QDomNode * parent, const GooList * items );
 	
 	void setPaperColor(const QColor &color)
 	{
