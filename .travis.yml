@@ -1,0 +1,43 @@
+sudo: required
+dist: trusty
+
+addons:
+  apt:
+    update: true
+    packages:
+      - fakeroot
+
+
+language: cpp
+services:
+  - docker
+
+env:
+  global:
+    - secure: "pi8SxwRctppW28sks0zmtTVFG3K8dpiFn7I0V8RlknztTemXHyax/xI1c3hgjEOmudRa+rj4sdam35EdTSCZN7NBVb0JWKcepktOvd2OPe0wr2Nh6dgSyxOnTbIxbeTlyLB9KdxYUaHRs6KY0prem5GKcYEMAIkA64AN0y++4oZjINQ8wj5cgzuPAV087xTuAD3NxEtU6vF2pvvGK6ptAbNBIei2oS5tG9IPP0AfpemR71ZGLPqIicXLkoaG+QRO6p07Odwzf4D2yvKgqxFxrKGSGkSYlf1LFwBkv73tSYbB37rLzoV6DycL3k/RvkvCDLYw5Am1FmvSi6iHzFs0Yd6URz0DK0TQBy5VcrhQewgYZrBeNhUND+rpIWqAQfzg7Cyt03KF9evVFb2poRH4aYLkT5BE7DAaKSOjYpCj8tcNObCjWHLKxTzu/JVcfRAVTvmnxp85K4g0mscw4YmrA61UymCCJM8TBLXwD25alliItlX6iasltGmU7vthO23vI5iSLc+qTTkrQSeLp/OVStlLGYwgT/o5JQ+iz+Mr/7n1AKWcfclLcC3sW0UfTADgYwgnXtZWhS8Y3cgd513vx/yIgZg3ALHiSynytUH70DkkqLB2fxkZ+84lPdyHMBqPMZZWfN68ofIPZUgRmt7GVGtGAiunSEZwut5A2zli+68="
+    - secure: "pi8SxwRctppW28sks0zmtTVFG3K8dpiFn7I0V8RlknztTemXHyax/xI1c3hgjEOmudRa+rj4sdam35EdTSCZN7NBVb0JWKcepktOvd2OPe0wr2Nh6dgSyxOnTbIxbeTlyLB9KdxYUaHRs6KY0prem5GKcYEMAIkA64AN0y++4oZjINQ8wj5cgzuPAV087xTuAD3NxEtU6vF2pvvGK6ptAbNBIei2oS5tG9IPP0AfpemR71ZGLPqIicXLkoaG+QRO6p07Odwzf4D2yvKgqxFxrKGSGkSYlf1LFwBkv73tSYbB37rLzoV6DycL3k/RvkvCDLYw5Am1FmvSi6iHzFs0Yd6URz0DK0TQBy5VcrhQewgYZrBeNhUND+rpIWqAQfzg7Cyt03KF9evVFb2poRH4aYLkT5BE7DAaKSOjYpCj8tcNObCjWHLKxTzu/JVcfRAVTvmnxp85K4g0mscw4YmrA61UymCCJM8TBLXwD25alliItlX6iasltGmU7vthO23vI5iSLc+qTTkrQSeLp/OVStlLGYwgT/o5JQ+iz+Mr/7n1AKWcfclLcC3sW0UfTADgYwgnXtZWhS8Y3cgd513vx/yIgZg3ALHiSynytUH70DkkqLB2fxkZ+84lPdyHMBqPMZZWfN68ofIPZUgRmt7GVGtGAiunSEZwut5A2zli+68="
+
+cache:
+  directories:
+    - $HOME/builder_ccache
+    - $HOME/full_build
+    - $HOME/proof-bin
+
+before_install: export -f travis_fold && export -f travis_time_start && export -f travis_time_finish && export -f travis_nanoseconds
+
+jobs:
+  include:
+    - &compile
+      stage: compilation
+      name: Compilation (Debian9/clang/ccache)
+      script:
+        - export PROJECT_ROOT=`pwd`
+        - $PROJECT_ROOT/travis/linux_compile.sh
+    - &post-compile
+      stage: Post compilation
+      name: Debian package upload to S3
+      if: type != pull_request AND branch != master
+      before_script: pip install --user awscli
+      script:
+        - export PROJECT_ROOT=`pwd`
+        - $PROJECT_ROOT/travis/build_and_upload_deb.sh
