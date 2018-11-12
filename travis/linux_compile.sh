@@ -46,7 +46,7 @@ echo " ";
 travis_fold start "prepare.extra_deps" && travis_time_start;
 echo -e "\033[1;33mInstalling extra dependencies...\033[0m";
 docker exec -t builder bash -c "apt-get -qq update";
-docker exec -t builder bash -c "apt-get -qq install libjpeg-dev libfontconfig1-dev -y --no-install-recommends";
+docker exec -t builder bash -c "apt-get -qq install make cmake libjpeg-dev libfontconfig1-dev -y --no-install-recommends";
 travis_time_finish && travis_fold end "prepare.extra_deps";
 echo " ";
 
