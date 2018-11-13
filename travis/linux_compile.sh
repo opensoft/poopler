@@ -50,12 +50,10 @@ docker exec -t builder bash -c "apt-get -qq install make cmake libjpeg-dev libfo
 travis_time_finish && travis_fold end "prepare.extra_deps";
 echo " ";
 
-mkdir -p /sandbox/build
-
 travis_fold start "build.cmake" && travis_time_start;
 echo -e "\033[1;33mRunning cmake...\033[0m";
 echo "$ /usr/bin/cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/sandbox/package-$TARGET_NAME";
-docker exec -t builder bash -c "exec 3>&1; set -o pipefail; rm -rf /sandbox/logs/*; cd build; \
+docker exec -t builder bash -c "exec 3>&1; set -o pipefail; rm -rf /sandbox/logs/*; mkdir build; cd build; \
 	/usr/bin/cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/sandbox/package-$TARGET_NAME -DENABLE_QT5=0 -DENABLE_UTILS=0 -DENABLE_GLIB=0 -DBUILD_GTK_TESTS=0 -DBUILD_CPP_TESTS=0 -DBUILD_QT5_TESTS=0 -DSPLASH_CMYK=1 -DENABLE_LIBOPENJPEG='unmaintained' 2>&1 1>&3 | (tee /sandbox/logs/errors.log 1>&2)";
 travis_time_finish && travis_fold end "build.qmake";
 echo " ";
