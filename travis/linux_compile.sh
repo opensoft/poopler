@@ -50,6 +50,8 @@ docker exec -t builder bash -c "apt-get -qq install make cmake libjpeg-dev libfo
 travis_time_finish && travis_fold end "prepare.extra_deps";
 echo " ";
 
+mkdir -p /sandbox/build
+
 travis_fold start "build.cmake" && travis_time_start;
 echo -e "\033[1;33mRunning cmake...\033[0m";
 echo "$ /usr/bin/cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/sandbox/package-$TARGET_NAME";
