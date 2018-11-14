@@ -1,9 +1,9 @@
 Package: poppler
 Version: 0.67.0
 Section: misc
-Depends: qt5-opensoft
+Depends: libjpeg-dev libfontconfig1-dev
 Suggests: 
 Recommends: 
 Architecture: amd64
 Maintainer: Dmitry Nesterenok <dmitry.nesterenok@opensoftdev.ru>
-Description: poppler version with pdf structure extractor
+Description: Poppler, a PDF rendering library (with pdf structure extractor)
