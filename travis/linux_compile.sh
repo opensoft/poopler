@@ -70,7 +70,7 @@ echo " ";
 travis_fold start "build.install" && travis_time_start;
 echo -e "\033[1;33mMake install...\033[0m";
 echo "$ cd /sandbox/target_src && make install";
-docker exec -t builder bash -c "cp -r /sandbox/target_src/DEBIAN /sandbox/package-$TARGET_NAME/  && cd /sandbox/target_src && make install";
+docker exec -t builder bash -c "mkdir -p /sandbox/package-$TARGET_NAME/ && cp -r /sandbox/target_src/DEBIAN /sandbox/package-$TARGET_NAME/ && cd /sandbox/target_src && make install";
 echo "$ tar -czf package-$TARGET_NAME.tar.gz package-$TARGET_NAME && mv /sandbox/package-$TARGET_NAME.tar.gz /sandbox/build/package-$TARGET_NAME.tar.gz";
 docker exec -t builder bash -c "tar -czf package-$TARGET_NAME.tar.gz package-$TARGET_NAME && mv /sandbox/package-$TARGET_NAME.tar.gz /sandbox/build/package-$TARGET_NAME.tar.gz";
 travis_time_finish && travis_fold end "build.install";
