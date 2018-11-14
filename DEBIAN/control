@@ -1,7 +1,7 @@
 Package: poppler
 Version: 0.67.0
 Section: misc
-Depends: libjpeg-dev libfontconfig1-dev
+Depends: libjpeg-dev, libfontconfig1-dev
 Suggests: 
 Recommends: 
 Architecture: amd64
