@@ -38,7 +38,7 @@ sudo rm -rf $HOME/full_build && mkdir $HOME/full_build;
 docker pull $DOCKER_IMAGE:latest;
 docker run -id --name builder -w="/sandbox" \
     -v $(pwd):/sandbox/target_src -v $HOME/builder_logs:/sandbox/logs \
-    -v $HOME/builder_ccache:/root/.ccache -v $HOME/full_build:/sandbox/build $DOCKER_IMAGE tail -f /dev/null;
+    -v $HOME/full_build:/sandbox/build $DOCKER_IMAGE tail -f /dev/null;
 docker ps;
 travis_time_finish && travis_fold end "prepare.docker";
 echo " ";
