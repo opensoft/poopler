@@ -28,7 +28,7 @@
 
 set -e
 
-DOCKER_IMAGE=opensoftdev/proof-builder-ccache;
+DOCKER_IMAGE=opensoftdev/proof-builder-base;
 TARGET_NAME=poppler
 mkdir -p $HOME/builder_logs;
 
@@ -37,7 +37,7 @@ echo -e "\033[1;33mDownloading and starting Docker container...\033[0m";
 sudo rm -rf $HOME/full_build && mkdir $HOME/full_build;
 docker pull $DOCKER_IMAGE:latest;
 docker run -id --name builder -w="/sandbox" \
-    -v $(pwd):/sandbox/target_src -v $HOME/proof-bin:/sandbox/proof-bin -v $HOME/builder_logs:/sandbox/logs \
+    -v $(pwd):/sandbox/target_src -v $HOME/builder_logs:/sandbox/logs \
     -v $HOME/builder_ccache:/root/.ccache -v $HOME/full_build:/sandbox/build $DOCKER_IMAGE tail -f /dev/null;
 docker ps;
 travis_time_finish && travis_fold end "prepare.docker";
@@ -56,7 +56,7 @@ travis_fold start "build.cmake" && travis_time_start;
 echo -e "\033[1;33mRunning cmake...\033[0m";
 echo "$ /usr/bin/cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR";
 docker exec -t builder bash -c "exec 3>&1; set -o pipefail; rm -rf /sandbox/logs/*; cd target_src;\
-        /usr/bin/cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/$INSTALL_DIR -DENABLE_QT5=0 -DENABLE_UTILS=0 -DENABLE_GLIB=0 -DBUILD_GTK_TESTS=0 -DBUILD_CPP_TESTS=0 -DBUILD_QT5_TESTS=0 -DSPLASH_CMYK=1 -DENABLE_LIBOPENJPEG='unmaintained' 2>&1 1>&3 | (tee /sandbox/logs/errors.log 1>&2)";
+        /usr/bin/cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR -DENABLE_QT5=0 -DENABLE_UTILS=0 -DENABLE_GLIB=0 -DBUILD_GTK_TESTS=0 -DBUILD_CPP_TESTS=0 -DBUILD_QT5_TESTS=0 -DSPLASH_CMYK=1 -DENABLE_LIBOPENJPEG='unmaintained' 2>&1 1>&3 | (tee /sandbox/logs/errors.log 1>&2)";
 travis_time_finish && travis_fold end "build.cmake";
 echo " ";
 

@@ -21,7 +21,6 @@ cache:
   directories:
     - $HOME/builder_ccache
     - $HOME/full_build
-    - $HOME/proof-bin
 
 before_install: export -f travis_fold && export -f travis_time_start && export -f travis_time_finish && export -f travis_nanoseconds
 
