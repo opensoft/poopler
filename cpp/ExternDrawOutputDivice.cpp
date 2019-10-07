@@ -136,7 +136,7 @@ SharedContourData ExternDrawOutputDivice::sharedContour(const GfxState *state, c
         fontChanged = false;
         // This is a hack because splash font make glyph contours
         // using textCTM, font size and zoom instead making it with identity matrix.
-        // That is why splash glyphs with same code and font are not identical.
+        // That is why splash glyphs with the same code and font are not identical.
         m_glyphs.clear();
     }
     auto fontReference = const_cast<GfxState *>(state)->getFont()->getID();
@@ -243,7 +243,7 @@ void ExternDrawOutputDivice::drawChar(GfxState *state, double x, double y, doubl
         return;
 
     auto contourDraw = std::make_shared<GlyphDraw>();
-    contourDraw->unicode = *u;
+    contourDraw->unicode = (u && uLen > 0) ? *u : 0;
     contourDraw->clip = (render >= 4) ? true : false;
     contourDraw->contourData = sharedContour(state, code);
     contourDraw->lineWidth = state->getLineWidth();

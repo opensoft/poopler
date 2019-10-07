@@ -28,7 +28,8 @@
 
 set -e
 
-TARGET_NAME=poppler
+TARGET_NAME=poppler-opensoft
+PACKAGE_VERSION=0.81.0
 
 travis_fold start "prepare.awscli" && travis_time_start;
 echo -e "\033[1;33mInstalling awscli...\033[0m";
@@ -62,7 +63,7 @@ echo " ";
 travis_fold start "pack.deb" && travis_time_start;
 echo -e "\033[1;33mCreating deb package...\033[0m";
 echo "$ fakeroot dpkg-deb --build package-$TARGET_NAME";
-docker exec -t builder bash -c "fakeroot dpkg-deb --build package-$TARGET_NAME /sandbox/target_src/poppler-opensoft.deb";
+docker exec -t builder bash -c "echo Version: ${PACKAGE_VERSION} >> ./package-$TARGET_NAME/DEBIAN/control && fakeroot dpkg-deb --build package-$TARGET_NAME /sandbox/target_src/${TARGET_NAME}-${PACKAGE_VERSION}.deb";
 travis_time_finish && travis_fold end "pack.deb";
 echo " ";
 

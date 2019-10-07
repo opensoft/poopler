@@ -29,7 +29,7 @@
 set -e
 
 DOCKER_IMAGE=opensoftdev/proof-builder-base;
-TARGET_NAME=poppler
+TARGET_NAME=poppler-opensoft
 mkdir -p $HOME/builder_logs;
 
 travis_fold start "prepare.docker" && travis_time_start;
