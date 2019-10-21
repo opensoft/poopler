@@ -14,6 +14,7 @@
 #    include "splash/SplashPath.h"
 #endif
 
+#include <deque>
 #include <map>
 
 namespace poppler {
@@ -21,10 +22,10 @@ TransformationMatrix &operator<<(TransformationMatrix &t, const double *ctm);
 
 using PdfReference = std::pair<int, int>;
 using PdfCharReference = std::pair<PdfReference, decltype(GlyphDraw::unicode)>;
-using SharedImageData = std::shared_ptr<ImageData>;
 
 using ImageStore = std::map<PdfReference, SharedImageData>;
 using GlyphStore = std::map<PdfCharReference, SharedContourData>;
+using RasterGlyphStore = std::map<PdfCharReference, SharedImageData>;
 
 struct ColorPrivate : public Color
 {
@@ -37,6 +38,7 @@ struct ImageDataPrivate : public ImageData
     ImageDataPrivate(bool isAskForImage, Stream *str, int _width, int _height, GfxImageColorMap *colorMap,
                      bool inlineImg = false);
     ImageDataPrivate(bool isAskForImage, Stream *str, int _width, int _height, bool inlineImg = false);
+    ImageDataPrivate(bool isAskForImage, const SplashGlyphBitmap &rasterGlyph);
 
 private:
     void download(Stream *str, bool inlineImg);
@@ -63,11 +65,15 @@ class ExternDrawOutputDivice : public SplashOutputDev
 {
     bool m_withSplashDraw = true;
     bool m_withImageData = true;
+    //the same as the parent's needFontUpdate which is not accessible
+    bool fontChanged = true;
 
     ImageStore m_images;
     ImageStore m_imageMasks;
     GlyphStore m_glyphs;
+    RasterGlyphStore m_rasterGlyphs;
     //std::list<SharedImageData> m_inlineImages;
+    std::deque<TransformationMatrix> m_groupStack;
 
     ProcessStepStore drawLaiers;
 
@@ -100,10 +106,11 @@ class ExternDrawOutputDivice : public SplashOutputDev
     {
         return sharedImage(m_imageMasks, args...);
     }
-    //same as parent needFontUpdate which is not accessible
-    bool fontChanged = true;
+
+    SharedImageData sharedGlyphImage(const GfxState *state, const CharCode &code);
     SharedContourData sharedContour(const GfxState *state, const CharCode &code);
     SharedContourData sharedContour(const GfxState *state, const GfxPath &path);
+    TransformationMatrix currientTransformation(GfxState *state);
 
 public:
     ProcessStepStore drawingSteps() const { return drawLaiers; }
@@ -235,12 +242,11 @@ public:
 
     ////----- transparency groups and soft masks
     //bool checkTransparencyGroup(GfxState *state, bool knockout) override;
-    //void beginTransparencyGroup(GfxState *state, double *bbox,
-    //                            GfxColorSpace *blendingColorSpace,
-    //                            bool isolated, bool knockout,
-    //                            bool forSoftMask) override;
-    //void endTransparencyGroup(GfxState *state) override;
-    //void paintTransparencyGroup(GfxState *state, double *bbox) override;
+    void beginTransparencyGroup(GfxState *state, const double *bbox, GfxColorSpace *blendingColorSpace, bool isolated,
+                                bool knockout, bool forSoftMask) override;
+
+    void endTransparencyGroup(GfxState *state) override;
+    void paintTransparencyGroup(GfxState *state, const double *bbox) override;
     //void setSoftMask(GfxState *state, double *bbox, bool alpha,
     //                 Function *transferFunc, GfxColor *backdropColor) override;
     //void clearSoftMask(GfxState *state) override;

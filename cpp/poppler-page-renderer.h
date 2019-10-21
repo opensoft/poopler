@@ -91,7 +91,7 @@ public:
     {
         StepInformation stepInformation() override
         {
-            return static_cast<StepInformation>(ProcessStep::Extra + 1);
+            return ProcessStep::StepInformation::SplashBitmapResult;
         }
         ImageData imageData;
     };

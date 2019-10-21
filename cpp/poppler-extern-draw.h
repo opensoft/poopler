@@ -75,20 +75,22 @@ struct ImageData
     std::vector<unsigned char> data;
 };
 
+using SharedImageData = std::shared_ptr<ImageData>;
+
 struct ContourData
 {
     struct ContourPoint
     {
         double x, y;
         // first point on each subpath sets this flag
-        bool firstPoint; // = 0x01,
+        bool firstPoint = false; // = 0x01,
         // last point on each subpath sets this flag
-        bool lastPoint; // = 0x02,
+        bool lastPoint = false; // = 0x02,
         // if the subpath is closed, its first and last points must be
         // identical, and must set this flag
-        bool pathClosed; // = 0x04,
+        bool pathClosed = false; // = 0x04,
         // curve control points set this flag
-        bool pathCurve; // = 0x08,
+        bool pathCurve = false; // = 0x08,
     };
     std::vector<ContourPoint> points;
 };
@@ -99,7 +101,7 @@ class ProcessStep
 {
 public:
     virtual ~ProcessStep();
-    enum StepInformation
+    enum class StepInformation
     {
         ContourDraw,
         ImageDraw,
@@ -108,8 +110,10 @@ public:
         TextStart,
         GlyphDraw,
         TextStop,
-        //extra codes for user steps : >= Extra
-        Extra
+        TransparencyGroupStart,
+        TransparencyGroupDraw,
+        TransparencyGroupStop,
+        SplashBitmapResult
     };
     virtual StepInformation stepInformation() = 0;
 };
@@ -139,6 +143,21 @@ struct DrawStep : public ProcessStep
     TransformationMatrix transform;
 };
 
+struct TransparencyGroupStart : public ProcessStep
+{
+    StepInformation stepInformation() override;
+};
+
+struct TransparencyGroupStop : public ProcessStep
+{
+    StepInformation stepInformation() override;
+};
+
+struct TransparencyGroupDraw : public ProcessStep
+{
+    StepInformation stepInformation() override;
+};
+
 struct ContourDraw : public DrawStep
 {
     StepInformation stepInformation() override;
@@ -159,13 +178,15 @@ struct GlyphDraw : public ContourDraw
     // accumulation continue on same level of the state?
     bool clip;
     unsigned int unicode;
+    // Some fonts may not be contour, but image
+    SharedImageData image;
 };
 
 struct ImageDraw : public DrawStep
 {
     StepInformation stepInformation() override;
-    std::shared_ptr<ImageData> image;
-    std::shared_ptr<ImageData> mask;
+    SharedImageData image;
+    SharedImageData mask;
     //1. if mask empty and maskColors is not - then maskColors contain min and max pairs for each
     // color component of pixel which must be excluded form draw (chroma-key)
     //2. if mask isn't empty maskColors used for set inversion of mask: if maskColors[0] > maskColors[1]
