@@ -1,5 +1,5 @@
-#ifndef ExternDrawOutputDevice_H
-#define ExternDrawOutputDevice_H
+#ifndef EXTERNDRAWOUTPUTDEVICE_H
+#define EXTERNDRAWOUTPUTDEVICE_H
 
 #include "GfxFont.h"
 #include "poppler-extern-draw.h"
@@ -256,4 +256,4 @@ private:
 };
 } // namespace poppler
 
-#endif // ExternDrawOutputDevice_H
+#endif // EXTERNDRAWOUTPUTDEVICE_H
