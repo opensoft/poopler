@@ -229,7 +229,7 @@ void ExternDrawOutputDevice::stroke(GfxState *state)
     contourDraw->strokeColor = ColorPrivate(state->getStrokeColorSpace(), state->getStrokeColor(),
                                             state->getStrokeOpacity());
     contourDraw->lineWidth = state->getLineWidth();
-    contourDraw->transform = currientTransformation(state);
+    contourDraw->transform = currentTransformation(state);
 
     drawLaiers.push_back(contourDraw);
 
@@ -242,7 +242,7 @@ void ExternDrawOutputDevice::fill(GfxState *state)
     auto contourDraw = std::make_shared<ContourDraw>();
     contourDraw->contourData = sharedContour(state, *state->getPath());
     contourDraw->fillColor = ColorPrivate(state->getFillColorSpace(), state->getFillColor(), state->getFillOpacity());
-    contourDraw->transform = currientTransformation(state);
+    contourDraw->transform = currentTransformation(state);
 
     drawLaiers.push_back(contourDraw);
 
@@ -256,7 +256,7 @@ void ExternDrawOutputDevice::eoFill(GfxState *state)
     contourDraw->contourData = sharedContour(state, *state->getPath());
     contourDraw->fillColor = ColorPrivate(state->getFillColorSpace(), state->getFillColor(), state->getFillOpacity());
     contourDraw->evenOddFillRule = true;
-    contourDraw->transform = currientTransformation(state);
+    contourDraw->transform = currentTransformation(state);
 
     drawLaiers.push_back(contourDraw);
 
@@ -288,7 +288,7 @@ void ExternDrawOutputDevice::drawChar(GfxState *state, double x, double y, doubl
     glyphDraw->clip = (render >= 4) ? true : false;
     glyphDraw->lineWidth = state->getLineWidth();
     Point origin = {x - originX, y - originY};
-    glyphDraw->transform = origin + currientTransformation(state);
+    glyphDraw->transform = origin + currentTransformation(state);
 
     if (render == 0 || render == 2 || render == 4 || render == 6)
         glyphDraw->fillColor = ColorPrivate(state->getFillColorSpace(), state->getFillColor(), state->getFillOpacity());
@@ -324,7 +324,7 @@ void ExternDrawOutputDevice::drawImageMask(GfxState *state, Object *ref, Stream 
     imageDraw->mask = sharedMask(ref, str, width, height, inlineImg);
     imageDraw->fillColor = ColorPrivate(state->getFillColorSpace(), state->getFillColor(), state->getFillOpacity());
     imageDraw->setMaskInversion(invert);
-    imageDraw->transform = currientTransformation(state);
+    imageDraw->transform = currentTransformation(state);
     drawLaiers.push_back(imageDraw);
 
     if (m_withSplashDraw && !inlineImg)
@@ -339,7 +339,7 @@ void ExternDrawOutputDevice::drawImage(GfxState *state, Object *ref, Stream *str
     if (maskColors)
         imageDraw->maskColors.assign(maskColors, maskColors + 2 * imageDraw->image->channels);
 
-    imageDraw->transform = currientTransformation(state);
+    imageDraw->transform = currentTransformation(state);
     drawLaiers.push_back(imageDraw);
 
     if (m_withSplashDraw && !inlineImg)
@@ -354,7 +354,7 @@ void ExternDrawOutputDevice::drawMaskedImage(GfxState *state, Object *ref, Strea
     imageDraw->image = sharedImage(ref, str, width, height, colorMap);
     imageDraw->mask = sharedMask(ref, maskStr, maskWidth, maskHeight);
     imageDraw->setMaskInversion(maskInvert);
-    imageDraw->transform = currientTransformation(state);
+    imageDraw->transform = currentTransformation(state);
     drawLaiers.push_back(imageDraw);
 
     if (m_withSplashDraw)
@@ -370,7 +370,7 @@ void ExternDrawOutputDevice::drawSoftMaskedImage(GfxState *state, Object *ref, S
     auto imageDraw = std::make_shared<ImageDrawPrivate>();
     imageDraw->image = sharedImage(ref, str, width, height, colorMap);
     imageDraw->mask = sharedMask(ref, maskStr, maskWidth, maskHeight, maskColorMap);
-    imageDraw->transform = currientTransformation(state);
+    imageDraw->transform = currentTransformation(state);
     drawLaiers.push_back(imageDraw);
     if (m_withSplashDraw)
         SplashOutputDev::drawSoftMaskedImage(state, ref, str, width, height, colorMap, interpolate, maskStr, maskWidth,
@@ -404,7 +404,7 @@ void ExternDrawOutputDevice::paintTransparencyGroup(GfxState *state, const doubl
         SplashOutputDev::paintTransparencyGroup(state, bbox);
 }
 
-poppler::TransformationMatrix ExternDrawOutputDevice::currientTransformation(GfxState *state)
+poppler::TransformationMatrix ExternDrawOutputDevice::currentTransformation(GfxState *state)
 {
     TransformationMatrix transformation;
     if (m_groupStack.empty())

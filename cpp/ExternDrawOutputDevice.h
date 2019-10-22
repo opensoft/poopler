@@ -110,7 +110,7 @@ class ExternDrawOutputDevice : public SplashOutputDev
     SharedImageData sharedGlyphImage(const GfxState *state, const CharCode &code);
     SharedContourData sharedContour(const GfxState *state, const CharCode &code);
     SharedContourData sharedContour(const GfxState *state, const GfxPath &path);
-    TransformationMatrix currientTransformation(GfxState *state);
+    TransformationMatrix currentTransformation(GfxState *state);
 
 public:
     ProcessStepStore drawingSteps() const { return drawLaiers; }
