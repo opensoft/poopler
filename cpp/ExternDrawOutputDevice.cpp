@@ -406,11 +406,11 @@ void ExternDrawOutputDevice::paintTransparencyGroup(GfxState *state, const doubl
 
 poppler::TransformationMatrix ExternDrawOutputDevice::currentTransformation(GfxState *state)
 {
+    if (!m_groupStack.empty())
+        return m_groupStack.front();
+
     TransformationMatrix transformation;
-    if (m_groupStack.empty())
-        transformation << state->getCTM();
-    else
-        transformation = m_groupStack.front();
+    transformation << state->getCTM();
     return transformation;
 }
 } // namespace poppler
