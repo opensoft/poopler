@@ -1,4 +1,4 @@
-#include "ExternDrawOutputDivice.h"
+#include "ExternDrawOutputDevice.h"
 
 #include <splash/SplashGlyphBitmap.h>
 
@@ -141,7 +141,7 @@ ContourDataPrivate::ContourDataPrivate(const GfxPath &path)
     }
 }
 
-SharedImageData ExternDrawOutputDivice::sharedGlyphImage(const GfxState *state, const CharCode &code)
+SharedImageData ExternDrawOutputDevice::sharedGlyphImage(const GfxState *state, const CharCode &code)
 {
     auto fontReference = const_cast<GfxState *>(state)->getFont()->getID();
     auto reference = PdfCharReference(PdfReference(fontReference->num, fontReference->gen), code);
@@ -164,7 +164,7 @@ SharedImageData ExternDrawOutputDivice::sharedGlyphImage(const GfxState *state, 
     return m_rasterGlyphs[reference] = std::make_shared<ImageDataPrivate>(m_withImageData, glyphBitmap);
 }
 
-SharedContourData ExternDrawOutputDivice::sharedContour(const GfxState *state, const CharCode &code)
+SharedContourData ExternDrawOutputDevice::sharedContour(const GfxState *state, const CharCode &code)
 {
     auto fontReference = const_cast<GfxState *>(state)->getFont()->getID();
     auto reference = PdfCharReference(PdfReference(fontReference->num, fontReference->gen), code);
@@ -177,12 +177,12 @@ SharedContourData ExternDrawOutputDivice::sharedContour(const GfxState *state, c
     return m_glyphs[reference] = std::make_shared<ContourDataPrivate>(*glyphPath);
 }
 
-SharedContourData ExternDrawOutputDivice::sharedContour(const GfxState * /*state*/, const GfxPath &path)
+SharedContourData ExternDrawOutputDevice::sharedContour(const GfxState * /*state*/, const GfxPath &path)
 {
     return std::make_shared<ContourDataPrivate>(path);
 }
 
-ExternDrawOutputDivice::ExternDrawOutputDivice(bool useSplashDraw, bool withImageData, SplashColorMode colorModeA,
+ExternDrawOutputDevice::ExternDrawOutputDevice(bool useSplashDraw, bool withImageData, SplashColorMode colorModeA,
                                                int bitmapRowPadA, bool reverseVideoA, SplashColorPtr paperColorA,
                                                bool bitmapTopDownA, SplashThinLineMode thinLineMode,
                                                bool overprintPreviewA)
@@ -193,14 +193,14 @@ ExternDrawOutputDivice::ExternDrawOutputDivice(bool useSplashDraw, bool withImag
     m_withImageData = withImageData;
 }
 
-void ExternDrawOutputDivice::saveState(GfxState *state)
+void ExternDrawOutputDevice::saveState(GfxState *state)
 {
     drawLaiers.push_back(std::make_shared<StateSave>());
     if (m_withSplashDraw)
         SplashOutputDev::saveState(state);
 }
 
-void ExternDrawOutputDivice::restoreState(GfxState *state)
+void ExternDrawOutputDevice::restoreState(GfxState *state)
 {
     drawLaiers.push_back(std::make_shared<StateRestore>());
     fontChanged = true;
@@ -208,21 +208,21 @@ void ExternDrawOutputDivice::restoreState(GfxState *state)
         SplashOutputDev::restoreState(state);
 }
 
-void ExternDrawOutputDivice::updateAll(GfxState *state)
+void ExternDrawOutputDevice::updateAll(GfxState *state)
 {
     fontChanged = true;
     if (m_withSplashDraw)
         SplashOutputDev::updateAll(state);
 }
 
-void ExternDrawOutputDivice::updateFont(GfxState *state)
+void ExternDrawOutputDevice::updateFont(GfxState *state)
 {
     fontChanged = true;
     if (m_withSplashDraw)
         SplashOutputDev::updateFont(state);
 }
 
-void ExternDrawOutputDivice::stroke(GfxState *state)
+void ExternDrawOutputDevice::stroke(GfxState *state)
 {
     auto contourDraw = std::make_shared<ContourDraw>();
     contourDraw->contourData = sharedContour(state, *state->getPath());
@@ -237,7 +237,7 @@ void ExternDrawOutputDivice::stroke(GfxState *state)
         SplashOutputDev::stroke(state);
 }
 
-void ExternDrawOutputDivice::fill(GfxState *state)
+void ExternDrawOutputDevice::fill(GfxState *state)
 {
     auto contourDraw = std::make_shared<ContourDraw>();
     contourDraw->contourData = sharedContour(state, *state->getPath());
@@ -250,7 +250,7 @@ void ExternDrawOutputDivice::fill(GfxState *state)
         SplashOutputDev::fill(state);
 }
 
-void ExternDrawOutputDivice::eoFill(GfxState *state)
+void ExternDrawOutputDevice::eoFill(GfxState *state)
 {
     auto contourDraw = std::make_shared<ContourDraw>();
     contourDraw->contourData = sharedContour(state, *state->getPath());
@@ -264,7 +264,7 @@ void ExternDrawOutputDivice::eoFill(GfxState *state)
         SplashOutputDev::eoFill(state);
 }
 
-void ExternDrawOutputDivice::drawChar(GfxState *state, double x, double y, double dx, double dy, double originX,
+void ExternDrawOutputDevice::drawChar(GfxState *state, double x, double y, double dx, double dy, double originX,
                                       double originY, CharCode code, int nBytes, Unicode *u, int uLen)
 {
     auto render = state->getRender();
@@ -303,21 +303,21 @@ void ExternDrawOutputDivice::drawChar(GfxState *state, double x, double y, doubl
         SplashOutputDev::drawChar(state, x, y, dx, dy, originX, originY, code, nBytes, u, uLen);
 }
 
-void ExternDrawOutputDivice::beginTextObject(GfxState *state)
+void ExternDrawOutputDevice::beginTextObject(GfxState *state)
 {
     drawLaiers.push_back(std::make_shared<TextStart>());
     if (m_withSplashDraw)
         SplashOutputDev::beginTextObject(state);
 }
 
-void ExternDrawOutputDivice::endTextObject(GfxState *state)
+void ExternDrawOutputDevice::endTextObject(GfxState *state)
 {
     drawLaiers.push_back(std::make_shared<TextStop>());
     if (m_withSplashDraw)
         SplashOutputDev::endTextObject(state);
 }
 
-void ExternDrawOutputDivice::drawImageMask(GfxState *state, Object *ref, Stream *str, int width, int height,
+void ExternDrawOutputDevice::drawImageMask(GfxState *state, Object *ref, Stream *str, int width, int height,
                                            bool invert, bool interpolate, bool inlineImg)
 {
     auto imageDraw = std::make_shared<ImageDrawPrivate>();
@@ -331,7 +331,7 @@ void ExternDrawOutputDivice::drawImageMask(GfxState *state, Object *ref, Stream 
         SplashOutputDev::drawImageMask(state, ref, str, width, height, invert, interpolate, inlineImg);
 }
 
-void ExternDrawOutputDivice::drawImage(GfxState *state, Object *ref, Stream *str, int width, int height,
+void ExternDrawOutputDevice::drawImage(GfxState *state, Object *ref, Stream *str, int width, int height,
                                        GfxImageColorMap *colorMap, bool interpolate, int *maskColors, bool inlineImg)
 {
     auto imageDraw = std::make_shared<ImageDrawPrivate>();
@@ -346,7 +346,7 @@ void ExternDrawOutputDivice::drawImage(GfxState *state, Object *ref, Stream *str
         SplashOutputDev::drawImage(state, ref, str, width, height, colorMap, interpolate, maskColors, inlineImg);
 }
 
-void ExternDrawOutputDivice::drawMaskedImage(GfxState *state, Object *ref, Stream *str, int width, int height,
+void ExternDrawOutputDevice::drawMaskedImage(GfxState *state, Object *ref, Stream *str, int width, int height,
                                              GfxImageColorMap *colorMap, bool interpolate, Stream *maskStr,
                                              int maskWidth, int maskHeight, bool maskInvert, bool maskInterpolate)
 {
@@ -362,7 +362,7 @@ void ExternDrawOutputDivice::drawMaskedImage(GfxState *state, Object *ref, Strea
                                          maskHeight, maskInvert, maskInterpolate);
 }
 
-void ExternDrawOutputDivice::drawSoftMaskedImage(GfxState *state, Object *ref, Stream *str, int width, int height,
+void ExternDrawOutputDevice::drawSoftMaskedImage(GfxState *state, Object *ref, Stream *str, int width, int height,
                                                  GfxImageColorMap *colorMap, bool interpolate, Stream *maskStr,
                                                  int maskWidth, int maskHeight, GfxImageColorMap *maskColorMap,
                                                  bool maskInterpolate)
@@ -377,7 +377,7 @@ void ExternDrawOutputDivice::drawSoftMaskedImage(GfxState *state, Object *ref, S
                                              maskHeight, maskColorMap, maskInterpolate);
 }
 
-void ExternDrawOutputDivice::beginTransparencyGroup(GfxState *state, const double *bbox,
+void ExternDrawOutputDevice::beginTransparencyGroup(GfxState *state, const double *bbox,
                                                     GfxColorSpace *blendingColorSpace, bool isolated, bool knockout,
                                                     bool forSoftMask)
 {
@@ -389,7 +389,7 @@ void ExternDrawOutputDivice::beginTransparencyGroup(GfxState *state, const doubl
         SplashOutputDev::beginTransparencyGroup(state, bbox, blendingColorSpace, isolated, knockout, forSoftMask);
 }
 
-void ExternDrawOutputDivice::endTransparencyGroup(GfxState *state)
+void ExternDrawOutputDevice::endTransparencyGroup(GfxState *state)
 {
     drawLaiers.push_back(std::make_shared<TransparencyGroupStop>());
     m_groupStack.pop_back();
@@ -397,14 +397,14 @@ void ExternDrawOutputDivice::endTransparencyGroup(GfxState *state)
         SplashOutputDev::endTransparencyGroup(state);
 }
 
-void ExternDrawOutputDivice::paintTransparencyGroup(GfxState *state, const double *bbox)
+void ExternDrawOutputDevice::paintTransparencyGroup(GfxState *state, const double *bbox)
 {
     drawLaiers.push_back(std::make_shared<TransparencyGroupDraw>());
     if (m_withSplashDraw)
         SplashOutputDev::paintTransparencyGroup(state, bbox);
 }
 
-poppler::TransformationMatrix ExternDrawOutputDivice::currientTransformation(GfxState *state)
+poppler::TransformationMatrix ExternDrawOutputDevice::currientTransformation(GfxState *state)
 {
     TransformationMatrix transformation;
     if (m_groupStack.empty())

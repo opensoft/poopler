@@ -31,7 +31,7 @@ set(poppler_cpp_Private_HEADERS
   poppler-page-private.h
   poppler-private.h
   poppler-toc-private.h
-  ExternDrawOutputDivice.h
+  ExternDrawOutputDevice.h
 )
 
 set(poppler_cpp_SRCS
@@ -49,7 +49,7 @@ set(poppler_cpp_SRCS
   poppler-toc.cpp
   poppler-extern-draw.cpp
   poppler-version.cpp
-  ExternDrawOutputDivice.cpp
+  ExternDrawOutputDevice.cpp
 )
 
 add_library(poppler-cpp ${poppler_cpp_SRCS} ${poppler_cpp_HEADERS} ${poppler_cpp_Private_HEADERS})

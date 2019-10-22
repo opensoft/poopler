@@ -27,7 +27,7 @@
 #include "poppler-document-private.h"
 #include "poppler-page-private.h"
 #include "poppler-image.h"
-#include "ExternDrawOutputDivice.h"
+#include "ExternDrawOutputDevice.h"
 
 #include <config.h>
 
@@ -387,7 +387,7 @@ ProcessStepStore page_renderer::extract_process(const page *p, double xres /*= 7
     bool useSplashDraw = splashMode != splash_color_mode::NotSet;
     SplashColorMode splashColorMode = useSplashDraw ? static_cast<SplashColorMode>(splashMode) : splashModeXBGR8;
 
-    ExternDrawOutputDivice splashOutputDev(useSplashDraw, withImageData, splashColorMode, 1, false, bgColor, true);
+    ExternDrawOutputDevice splashOutputDev(useSplashDraw, withImageData, splashColorMode, 1, false, bgColor, true);
     splashOutputDev.setFontAntialias(d->hints & text_antialiasing ? true : false);
     splashOutputDev.setVectorAntialias(d->hints & antialiasing ? true : false);
     splashOutputDev.setFreeTypeHinting(d->hints & text_hinting ? true : false, false);

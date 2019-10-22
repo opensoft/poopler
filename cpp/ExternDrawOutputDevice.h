@@ -1,5 +1,5 @@
-#ifndef EXTERNDRAWOUTPUTDIVICE_H
-#define EXTERNDRAWOUTPUTDIVICE_H
+#ifndef ExternDrawOutputDevice_H
+#define ExternDrawOutputDevice_H
 
 #include "GfxFont.h"
 #include "poppler-extern-draw.h"
@@ -61,7 +61,7 @@ struct ImageDrawPrivate : public ImageDraw
     }
 };
 
-class ExternDrawOutputDivice : public SplashOutputDev
+class ExternDrawOutputDevice : public SplashOutputDev
 {
     bool m_withSplashDraw = true;
     bool m_withImageData = true;
@@ -114,7 +114,7 @@ class ExternDrawOutputDivice : public SplashOutputDev
 
 public:
     ProcessStepStore drawingSteps() const { return drawLaiers; }
-    ExternDrawOutputDivice(bool useSplashDraw, bool withImageData, SplashColorMode colorModeA, int bitmapRowPadA,
+    ExternDrawOutputDevice(bool useSplashDraw, bool withImageData, SplashColorMode colorModeA, int bitmapRowPadA,
                            bool reverseVideoA, SplashColorPtr paperColorA, bool bitmapTopDownA = true,
                            SplashThinLineMode thinLineMode = splashThinLineDefault,
                            bool overprintPreviewA = globalParams->getOverprintPreview());
@@ -256,4 +256,4 @@ private:
 };
 } // namespace poppler
 
-#endif // EXTERNDRAWOUTPUTDIVICE_H
+#endif // ExternDrawOutputDevice_H
